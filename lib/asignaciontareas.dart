@@ -143,6 +143,18 @@ class AsignacionTareasState extends State<AsignacionTareas> {
     Navigator.of(context).pushReplacement(LoginScreen.route());
   }
 
+  Future<void> _pickImageGaleria() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    setState(() {
+      if (pickedFile != null) {
+        _image = File(pickedFile.path);
+      } else {
+        print('No se seleccionó ninguna imagen.');
+      }
+    });
+  }
+
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.camera);
 
@@ -567,7 +579,7 @@ class AsignacionTareasState extends State<AsignacionTareas> {
                           },
                           value: selectedValueSingleDialog,
                           // hint: "Tiendas",
-                          searchHint: "Selecciona una tienda",
+                          searchHint: "Selecciona una tarea",
                           onChanged: (value) {
                             print("La tarea seleccionada es: $value");
                             setState(() {
@@ -607,12 +619,27 @@ class AsignacionTareasState extends State<AsignacionTareas> {
                       const SizedBox(height: 20),
                       ElevatedButton.icon(
                         onPressed: _pickImage,
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Tomar Foto'),
+                        icon: const Icon(Icons.camera_alt, color: Colors.white,),
+                        label: const Text('Tomar Foto',
+                          style: TextStyle(color: Colors.white),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          primary: const Color(0xff007DA4),
+                          backgroundColor: const Color(0xff007DA4),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 15),
+                              horizontal: 40, vertical: 10),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      ElevatedButton.icon(
+                        onPressed: _pickImageGaleria,
+                        icon: const Icon(Icons.camera_indoor, color: Colors.white,),
+                        label: const Text('Tomar de galeria',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff007DA4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 10),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -629,11 +656,10 @@ class AsignacionTareasState extends State<AsignacionTareas> {
                               ? null
                               : () async {
                                   setState(() {
-                                    isSending = true; // Deshabilita el botón
+                                    isSending = true;
                                   });
 
                                   try {
-                                    // Lógica para enviar los datos
                                     String tareaSeleccionada =
                                         selectedValueSingleDialog!;
                                     String comentario = _commentController.text;
@@ -645,20 +671,19 @@ class AsignacionTareasState extends State<AsignacionTareas> {
                                     await enviarTarea(
                                         tareaSeleccionada, comentario);
                                   } finally {
-                                    // Espera un corto período para prevenir múltiples toques rápidos
                                     await Future.delayed(
                                         Duration(milliseconds: 500));
 
                                     if (mounted) {
                                       setState(() {
                                         isSending =
-                                            false; // Habilita el botón nuevamente
+                                            false;
                                       });
                                     }
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            primary: const Color(0xff060024),
+                            backgroundColor: const Color(0xff060024),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 40, vertical: 15),
                           ),
@@ -716,7 +741,6 @@ class AsignacionTareasState extends State<AsignacionTareas> {
           onTap: (int index) {
             switch (index) {
               case 0:
-                // only scroll to top when current index is selected.
                 if (_selectedIndex == index) {
                   Navigator.of(context).pushAndRemoveUntil(
                       HomeScreen.route(""), (route) => false);
@@ -743,7 +767,6 @@ class AsignacionTareasState extends State<AsignacionTareas> {
       bool? sortedBy,
       List<Tuple2<String, String>>? searchList,
       int? maxLength) async {
-    //Se almacenaran las tiendas
     List<DropdownMenuItem<String>> resultados = [];
 
     for (var element in tareas) {

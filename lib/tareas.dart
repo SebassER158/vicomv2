@@ -51,9 +51,7 @@ class _MyHomePageState extends State<Tareas> {
   var tareas_realizadasList= [];
 
   int _selectedIndex = 0;
-  final ScrollController _homeController = ScrollController();
 
-  File? _image;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -74,7 +72,6 @@ class _MyHomePageState extends State<Tareas> {
   }
 
   void getData() async {
-    SharedPreferences prefs1 = await SharedPreferences.getInstance();
 
     try {
       var response = await Api().getTareasPendientes(cuenta, idTienda);
@@ -144,7 +141,6 @@ class _MyHomePageState extends State<Tareas> {
 
     setState(() {
       if (pickedFile != null) {
-        _image = File(pickedFile.path);
       } else {
         print('No se seleccionó ninguna imagen.');
       }

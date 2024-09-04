@@ -57,7 +57,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   }
 
   Future userLogin(nip) async {
-    //version nueva con perfiles general
     var url = "http://72.167.33.202:2020/getValuesTableByCuenta/sicom/cuentas/$nip";
     http.Response response = await http.get(Uri.parse(url));
 

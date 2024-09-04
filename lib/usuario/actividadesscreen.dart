@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vicomv2/apis/api.dart';
 import 'package:intl/intl.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:fluttertoast/fluttertoast.dart';
 
 // ignore: unused_import
 class ActividadesScreen extends StatefulWidget {
@@ -55,7 +53,7 @@ class ActividadesScreenState extends State<ActividadesScreen> {
     String fechaHoy = DateFormat('yyyy-MM-dd').format(DateTime.now());
     var respuesta = await Api().getActividades(cuenta, int.parse(mensaje), fechaHoy);
     if (respuesta.statusCode == 200) {
-        data = respuesta.body; //store response as string
+        data = respuesta.body;
         
         setState(() {
           datos = jsonDecode(data);

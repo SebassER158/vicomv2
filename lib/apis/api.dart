@@ -38,18 +38,6 @@ class Api {
         });
   }
 
-  // getDatos(int id) async{
-  //   var url = "http://51.222.136.150:3131/getValoresByEjecutivo/usuarios/$id";
-  //   print(url);
-  //   return await http.get(Uri.parse(url));
-  // }
-
-  // getDatosById(String tabla, int id) async{
-  //   var url = "http://51.222.136.150:3131/getValoresById/$tabla/$id";
-  //   print(url);
-  //   return await http.get(Uri.parse(url));
-  // }
-
   getActividades(String cuenta, int id, String fecha) async{
     var url = "http://72.167.33.202:2020/getActividadesPromotor/$cuenta/$id/$fecha";
     print(url);
@@ -58,6 +46,12 @@ class Api {
 
   getTiendas(String cuenta, String tabla) async{
     var url = "http://72.167.33.202:2020/getTableListValues/$cuenta/$tabla";
+    print(url);
+    return await http.get(Uri.parse(url));
+  }
+
+  getFechaCadena(String cuenta, String cadena) async{
+    var url = "http://72.167.33.202:2020/getFechaCadena/$cuenta/$cadena";
     print(url);
     return await http.get(Uri.parse(url));
   }

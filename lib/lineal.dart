@@ -1,13 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:vicomv2/apis/api.dart';
 import 'package:vicomv2/homescreen.dart';
-import 'package:vicomv2/usuario/actividadesscreen.dart';
-import 'package:intl/intl.dart';
 
 import 'loginScreen.dart';
 
@@ -52,7 +47,6 @@ class _MyHomePageState extends State<Lineal> {
   String avance = "";
 
   int _selectedIndex = 0;
-  final ScrollController _homeController = ScrollController();
 
   @override
   void initState() {
@@ -72,7 +66,6 @@ class _MyHomePageState extends State<Lineal> {
   }
 
   void getData() async {
-    SharedPreferences prefs1 = await SharedPreferences.getInstance();
     
     try {
       var response2 = await Api().getObjetivosLi(cuenta, idTienda);

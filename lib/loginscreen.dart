@@ -1,11 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:vicomv2/apis/api.dart';
 import 'package:vicomv2/homescreen.dart';
 import 'package:search_choices/search_choices.dart';
@@ -30,7 +27,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> _key = GlobalKey();
 
-  late String _nip;
   late SharedPreferences logindata;
   bool newuser = false;
   String cuenta = "";

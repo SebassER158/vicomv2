@@ -1,9 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:vicomv2/apis/api.dart';
 import 'package:vicomv2/asignaciontareas.dart';
 import 'package:vicomv2/biscreen.dart';
@@ -11,7 +8,6 @@ import 'package:vicomv2/frentes.dart';
 import 'package:vicomv2/homescreen.dart';
 import 'package:vicomv2/puntoscontrol.dart';
 import 'package:vicomv2/tareas.dart';
-import 'package:vicomv2/usuario/actividadesscreen.dart';
 import 'package:intl/intl.dart';
 import 'package:photo_view/photo_view.dart';
 
@@ -62,7 +58,6 @@ class _MyHomePageState extends State<Exhibiciones> {
   var exhibiciones;
 
   int _selectedIndex = 0;
-  final ScrollController _homeController = ScrollController();
 
   @override
   void initState() {
@@ -82,7 +77,6 @@ class _MyHomePageState extends State<Exhibiciones> {
   }
 
   void getData() async {
-    SharedPreferences prefs1 = await SharedPreferences.getInstance();
 
     try {
       var response2 = await Api().getObjetivosEx(cuenta, idTienda);

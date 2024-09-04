@@ -44,6 +44,7 @@ class _MyHomePageState extends State<HomeScreen> {
   String perfil = "";
   String userCeys = "";
   String nombreUsuario = "";
+  String fecha_cadena = "";
 
   late String datatv;
   var totalVisitasList = [];
@@ -105,7 +106,6 @@ class _MyHomePageState extends State<HomeScreen> {
   bool _isVisible_dl = false;
 
   int _selectedIndex = 0;
-  final ScrollController _homeController = ScrollController();
 
   String deviceModel = 'Unknown';
 
@@ -142,9 +142,7 @@ class _MyHomePageState extends State<HomeScreen> {
     final todayString = '${today.year}-${today.month}-${today.day}';
 
     if (lastSavedDate != todayString) {
-      // Save model to database
       var res_mod = await Api().saveModelos(cuenta, 0, deviceModel);
-      // If the save is successful, update the last saved date
       if (res_mod.statusCode == 200) {
         await prefs.setString('last_saved_date', todayString);
       }
@@ -169,7 +167,6 @@ class _MyHomePageState extends State<HomeScreen> {
   }
 
   void getData() async {
-    SharedPreferences prefs1 = await SharedPreferences.getInstance();
 
     showDialog(
       context: context,
@@ -196,6 +193,26 @@ class _MyHomePageState extends State<HomeScreen> {
         );
       },
     );
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      var responsefc = await Api().getFechaCadena(cuenta, prefs.getString('cadena') ?? "");
+      if (responsefc.statusCode == 200) {
+        print("Entro en response 200");
+        String respuesta = responsefc.body;
+        var datafc = jsonDecode(respuesta);
+        DateTime fechaF = DateTime.parse(datafc[0]["fecha"]).toLocal();
+        
+        setState(() {
+          fecha_cadena = DateFormat('dd-MM-yyyy').format(fechaF);
+        });
+        print("Esta es la fecha $fecha_cadena");
+      } else {
+        print(responsefc.statusCode);
+      }
+    } catch (e) {
+      print("Error de conexión: $e");
+    }
 
     try {
       var response = await Api().getTiendas(cuenta, "tiendas");
@@ -724,90 +741,139 @@ class _MyHomePageState extends State<HomeScreen> {
                       height: 20,
                     ),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              color: const Color(0xff007DA4),
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(5),
-                                bottomLeft: Radius.circular(5),
-                              )),
-                          child: const Text(
-                            "Formato:",
-                            style: TextStyle(
-                                fontFamily: "Montserrat",
-                                color: Colors.white,
-                                fontSize: 16),
-                          ),
+                        Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                      color: const Color(0xff007DA4),
+                                      border: Border.all(
+                                          color: const Color(0xff007DA4), width: 2),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(5),
+                                        bottomLeft: Radius.circular(5),
+                                      )),
+                                  child: const Text(
+                                    "Formato:",
+                                    style: TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.white,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: const Color(0xff007DA4), width: 2),
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(5),
+                                        bottomRight: Radius.circular(5),
+                                      )),
+                                  child: Text(
+                                    "$formato $numero",
+                                    style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              height: 20,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                      color: const Color(0xff007DA4),
+                                      border: Border.all(
+                                          color: const Color(0xff007DA4), width: 2),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(5),
+                                        bottomLeft: Radius.circular(5),
+                                      )),
+                                  child: const Text(
+                                    "Tienda:",
+                                    style: TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.white,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: const Color(0xff007DA4), width: 2),
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(5),
+                                        bottomRight: Radius.circular(5),
+                                      )),
+                                  child: Text(
+                                    tienda,
+                                    style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              height: 20,
+                            ),
+                          ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(5),
-                                bottomRight: Radius.circular(5),
-                              )),
-                          child: Text(
-                            "$formato $numero",
-                            style: const TextStyle(
-                                fontFamily: "Montserrat",
-                                color: Colors.black,
-                                fontSize: 16),
-                          ),
-                        ),
+                        Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                      color: const Color(0xff007DA4),
+                                      border: Border.all(
+                                          color: const Color(0xff007DA4), width: 2),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(5),
+                                        topRight: Radius.circular(5),
+                                      )),
+                                  child: const Text(
+                                    "S.O al dia::",
+                                    style: TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.white,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(5),
+                                  decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: const Color(0xff007DA4), width: 2),
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(5),
+                                        bottomRight: Radius.circular(5),
+                                      )),
+                                  child: Text(
+                                    "$fecha_cadena",
+                                    style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
                       ],
-                    ),
-                    Container(
-                      height: 20,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              color: const Color(0xff007DA4),
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(5),
-                                bottomLeft: Radius.circular(5),
-                              )),
-                          child: const Text(
-                            "Tienda:",
-                            style: TextStyle(
-                                fontFamily: "Montserrat",
-                                color: Colors.white,
-                                fontSize: 16),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(5),
-                                bottomRight: Radius.circular(5),
-                              )),
-                          child: Text(
-                            tienda,
-                            style: const TextStyle(
-                                fontFamily: "Montserrat",
-                                color: Colors.black,
-                                fontSize: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      height: 20,
                     ),
                     const Divider(
                       color: Colors.grey,
@@ -1995,7 +2061,6 @@ class _MyHomePageState extends State<HomeScreen> {
       bool? sortedBy,
       List<Tuple2<String, String>>? searchList,
       int? maxLength) async {
-    //Se almacenaran las tiendas
     List<DropdownMenuItem<String>> resultados = [];
 
     // tiendas2.forEach((element) {
@@ -2026,7 +2091,6 @@ class _MyHomePageState extends State<HomeScreen> {
       PermissionStatus status = await Permission.location.request();
 
       if (status.isGranted) {
-        // Los permisos de ubicación están concedidos, puedes acceder a la ubicación.
         Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
