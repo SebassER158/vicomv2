@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:vicomv2/loginscreen.dart';
+import 'package:vicomv2/Iniciosesion.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
   const ConfiguracionScreen({super.key});
@@ -45,7 +45,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     if (newuser == true) {
       print("Paso por configurado true");
       // ignore: use_build_context_synchronously
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Iniciosesion()));
       //Navigator.of(context).push(HomeScreen.route());
     }
   }
@@ -70,7 +70,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
         setState(() {
           isLoading = false;
         });
-        Navigator.of(context).pushReplacement(LoginScreen.route());
+        Navigator.of(context).pushReplacement(Iniciosesion.route());
       } else {
         Fluttertoast.showToast(
             msg: "No existe la cuenta",
@@ -110,7 +110,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
       );
     } else {
       return const Scaffold(
-        body: LoginScreen(),
+        body: Iniciosesion(),
         //body: Text(""),
       );
     }

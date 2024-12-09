@@ -38,6 +38,24 @@ class Api {
         });
   }
 
+  postSaveTareasFotoAsignadas(
+      int tienda, String tarea, String comentario, String cuenta, String nombre, String imagen64) async {
+    var url = "http://72.167.33.202:2020/postSaveTareasFotoAsignadas";
+    return await http.post(Uri.parse(url),
+        body: json.encode({
+          "tienda": tienda,
+          "nombre_imgF": nombre,
+          "imgF": imagen64,
+          "tarea": tarea,
+          "comentario": comentario,
+          "db": cuenta
+        }),
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json",
+        });
+  }
+
   getActividades(String cuenta, int id, String fecha) async{
     var url = "http://72.167.33.202:2020/getActividadesPromotor/$cuenta/$id/$fecha";
     print(url);
@@ -226,6 +244,21 @@ class Api {
 
   saveModelos(String cuenta, int user_id, String modelo) async{
     var url = "http://72.167.33.202:2020/saveModelos/$cuenta/$user_id/$modelo";
+    return await http.get(Uri.parse(url));
+  }
+
+  getUserLogin(String cuenta, String user, String pass) async{
+    var url = "http://72.167.33.202:2020/getUserLogin/$cuenta/$user/$pass";
+    return await http.get(Uri.parse(url));
+  }
+
+  getCheckTareas(String cuenta, String tarea, int tienda) async{
+    var url = "http://72.167.33.202:2020/getCheckTareas/$cuenta/$tarea/$tienda";
+    return await http.get(Uri.parse(url));
+  }
+
+  getCheckTareasAsignadas(String cuenta, String tarea, int tienda) async{
+    var url = "http://72.167.33.202:2020/getCheckTareasAsignadas/$cuenta/$tarea/$tienda";
     return await http.get(Uri.parse(url));
   }
 

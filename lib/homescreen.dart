@@ -9,6 +9,7 @@ import 'package:vicomv2/asignaciontareas.dart';
 import 'package:vicomv2/biscreen.dart';
 import 'package:vicomv2/exhibiciones.dart';
 import 'package:vicomv2/frentes.dart';
+import 'package:vicomv2/iniciosesion.dart';
 import 'package:vicomv2/puntoscontrol.dart';
 import 'package:vicomv2/tareas.dart';
 import 'package:photo_view/photo_view.dart';
@@ -118,7 +119,15 @@ class _MyHomePageState extends State<HomeScreen> {
   void initState() {
     super.initState();
     loginState();
-    getData();
+    //getData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      getData(); // Llamar a getData después de que el widget haya sido renderizado.
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   Future<void> _getDeviceInfo() async {
@@ -167,7 +176,6 @@ class _MyHomePageState extends State<HomeScreen> {
   }
 
   void getData() async {
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -196,13 +204,14 @@ class _MyHomePageState extends State<HomeScreen> {
 
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      var responsefc = await Api().getFechaCadena(cuenta, prefs.getString('cadena') ?? "");
+      var responsefc =
+          await Api().getFechaCadena(cuenta, prefs.getString('cadena') ?? "");
       if (responsefc.statusCode == 200) {
         print("Entro en response 200");
         String respuesta = responsefc.body;
         var datafc = jsonDecode(respuesta);
         DateTime fechaF = DateTime.parse(datafc[0]["fecha"]).toLocal();
-        
+
         setState(() {
           fecha_cadena = DateFormat('dd-MM-yyyy').format(fechaF);
         });
@@ -497,6 +506,21 @@ class _MyHomePageState extends State<HomeScreen> {
     Navigator.of(context).pushReplacement(LoginScreen.route());
   }
 
+  void logout2() async {
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.remove("logueado");
+    await preferences.remove("nip");
+    await preferences.remove("id_sucursal");
+    await preferences.remove("usuario");
+    await preferences.remove("id_usuario");
+    await preferences.remove("alias");
+    await preferences.remove("iniciosesion");
+
+    // await preferences.clear();
+    //Navigator.of(context).push(LoginS.route("mensaje"));
+    Navigator.of(context).pushReplacement(Iniciosesion.route());
+  }
+
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
@@ -743,136 +767,157 @@ class _MyHomePageState extends State<HomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
+                        Expanded(
+                          // Envuelve el primer column en un Expanded
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                        color: const Color(0xff007DA4),
+                                        border: Border.all(
+                                            color: const Color(0xff007DA4),
+                                            width: 2),
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(5),
+                                          bottomLeft: Radius.circular(5),
+                                        )),
+                                    child: const Text(
+                                      "Formato:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.white,
+                                          fontSize: 16),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    // Usar Expanded aquí para que el texto largo no cause problemas
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                          border: Border.all(
+                                              color: const Color(0xff007DA4),
+                                              width: 2),
+                                          borderRadius: const BorderRadius.only(
+                                            topRight: Radius.circular(5),
+                                            bottomRight: Radius.circular(5),
+                                          )),
+                                      child: Text(
+                                        "$formato $numero",
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                            fontFamily: "Montserrat",
+                                            color: Colors.black,
+                                            fontSize: 16),
+                                        overflow: TextOverflow
+                                            .ellipsis, // Para manejar textos largos
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(
+                                  height:
+                                      20), // Usar SizedBox en lugar de Container para mejor rendimiento
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                        color: const Color(0xff007DA4),
+                                        border: Border.all(
+                                            color: const Color(0xff007DA4),
+                                            width: 2),
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(5),
+                                          bottomLeft: Radius.circular(5),
+                                        )),
+                                    child: const Text(
+                                      "Tienda:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.white,
+                                          fontSize: 16),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    // Usar Expanded aquí también
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                          border: Border.all(
+                                              color: const Color(0xff007DA4),
+                                              width: 2),
+                                          borderRadius: const BorderRadius.only(
+                                            topRight: Radius.circular(5),
+                                            bottomRight: Radius.circular(5),
+                                          )),
+                                      child: Text(
+                                        tienda,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                            fontFamily: "Montserrat",
+                                            color: Colors.black,
+                                            fontSize: 16),
+                                        overflow: TextOverflow
+                                            .ellipsis, // Para manejar textos largos
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(
+                                  height:
+                                      20), // Usar SizedBox en lugar de Container
+                            ],
+                          ),
+                        ),
                         Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: BoxDecoration(
-                                      color: const Color(0xff007DA4),
-                                      border: Border.all(
-                                          color: const Color(0xff007DA4), width: 2),
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(5),
-                                        bottomLeft: Radius.circular(5),
-                                      )),
-                                  child: const Text(
-                                    "Formato:",
-                                    style: TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.white,
-                                        fontSize: 16),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: const Color(0xff007DA4), width: 2),
-                                      borderRadius: const BorderRadius.only(
-                                        topRight: Radius.circular(5),
-                                        bottomRight: Radius.circular(5),
-                                      )),
-                                  child: Text(
-                                    "$formato $numero",
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                ),
-                              ],
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                  color: const Color(0xff007DA4),
+                                  border: Border.all(
+                                      color: const Color(0xff007DA4), width: 2),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(5),
+                                    topRight: Radius.circular(5),
+                                  )),
+                              child: const Text(
+                                "S.O al dia::",
+                                style: TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.white,
+                                    fontSize: 16),
+                              ),
                             ),
                             Container(
-                              height: 20,
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: BoxDecoration(
-                                      color: const Color(0xff007DA4),
-                                      border: Border.all(
-                                          color: const Color(0xff007DA4), width: 2),
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(5),
-                                        bottomLeft: Radius.circular(5),
-                                      )),
-                                  child: const Text(
-                                    "Tienda:",
-                                    style: TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.white,
-                                        fontSize: 16),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: const Color(0xff007DA4), width: 2),
-                                      borderRadius: const BorderRadius.only(
-                                        topRight: Radius.circular(5),
-                                        bottomRight: Radius.circular(5),
-                                      )),
-                                  child: Text(
-                                    tienda,
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              height: 20,
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: const Color(0xff007DA4), width: 2),
+                                  borderRadius: const BorderRadius.only(
+                                    bottomLeft: Radius.circular(5),
+                                    bottomRight: Radius.circular(5),
+                                  )),
+                              child: Text(
+                                "$fecha_cadena",
+                                style: const TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.black,
+                                    fontSize: 16),
+                                overflow: TextOverflow
+                                    .ellipsis, // Para manejar textos largos si es necesario
+                              ),
                             ),
                           ],
                         ),
-                        Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: BoxDecoration(
-                                      color: const Color(0xff007DA4),
-                                      border: Border.all(
-                                          color: const Color(0xff007DA4), width: 2),
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(5),
-                                        topRight: Radius.circular(5),
-                                      )),
-                                  child: const Text(
-                                    "S.O al dia::",
-                                    style: TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.white,
-                                        fontSize: 16),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: const Color(0xff007DA4), width: 2),
-                                      borderRadius: const BorderRadius.only(
-                                        bottomLeft: Radius.circular(5),
-                                        bottomRight: Radius.circular(5),
-                                      )),
-                                  child: Text(
-                                    "$fecha_cadena",
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                ),
-                              ],
-                            ),
                       ],
                     ),
                     const Divider(
@@ -2025,7 +2070,8 @@ class _MyHomePageState extends State<HomeScreen> {
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.open_in_new_rounded),
-                label: 'Tiendas',
+                // label: 'Tiendas',
+                label: 'Login',
               ),
             ],
             currentIndex: _selectedIndex,
@@ -2040,8 +2086,8 @@ class _MyHomePageState extends State<HomeScreen> {
                   }
                   break;
                 case 1:
-                  // showModal(context);
-                  logout();
+                  showModal(context);
+                  // logout();
               }
               setState(
                 () {
@@ -2153,7 +2199,7 @@ class _MyHomePageState extends State<HomeScreen> {
           ),
           TextButton(
             onPressed: () {
-              logout();
+              logout2();
             },
             child: const Text('Cerrar sesión'),
           )

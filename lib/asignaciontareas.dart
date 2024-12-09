@@ -119,11 +119,32 @@ class AsignacionTareasState extends State<AsignacionTareas> {
     String imagen64 = base64.encode(bytes);
 
     try {
-      http.Response response = await Api().postSaveTareasFoto(
-          idTienda, tareaenv, comentarioenv, cuenta, nombre_foto, imagen64);
+      var response1 = await Api().getCheckTareasAsignadas(cuenta, tareaenv, idTienda);
+      if (response1.statusCode == 200) {
+        print("Entro en response 200");
+        String respuesta = response1.body;
+        var data = jsonDecode(respuesta);
+        if (data[0]["existe"] >= 1) {
+          Fluttertoast.showToast(
+              msg: "Ya existe una tarea con el mismo nombre",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              fontSize: 16.0);
+        } else {
+          Fluttertoast.showToast(
+              msg: "Tarea almacenada",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              fontSize: 16.0);
+          http.Response response = await Api().postSaveTareasFotoAsignadas(
+              idTienda, tareaenv, comentarioenv, cuenta, nombre_foto, imagen64);
 
-      Navigator.of(context)
-          .pushAndRemoveUntil(HomeScreen.route(""), (route) => false);
+          Navigator.of(context)
+              .pushAndRemoveUntil(HomeScreen.route(""), (route) => false);
+        }
+      }
     } catch (e) {
       print("Error: $e");
     }
@@ -172,247 +193,6 @@ class AsignacionTareasState extends State<AsignacionTareas> {
     // Clean up the controller when the widget is disposed.
     super.dispose();
   }
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   return MaterialApp(
-  //     debugShowCheckedModeBanner: false,
-  //     home: Scaffold(
-  //       key: _scaffoldKey,
-  //       drawer: Drawer(
-  //         child: ListView(
-  //           padding: EdgeInsets.zero,
-  //           children: <Widget>[
-  //             DrawerHeader(
-  //                 decoration: const BoxDecoration(
-  //                   color: Color(0xff060024),
-  //                 ),
-  //                 child: Center(
-  //                   child: Image.asset(
-  //                     "assets/logo_app.png",
-  //                     scale: 6,
-  //                   ),
-  //                 )),
-  //             ListTile(
-  //               leading: const Icon(Icons.home),
-  //               title: const Text('Inicio'),
-  //               onTap: () {
-  //                 Navigator.of(context).pushAndRemoveUntil(
-  //                     HomeScreen.route(""), (route) => false);
-  //               },
-  //             ),
-  //             ListTile(
-  //               leading: const Icon(Icons.store),
-  //               title: const Text('Tiendas'),
-  //               onTap: () {
-  //                 logout();
-  //               },
-  //             ),
-  //             ListTile(
-  //               leading: const Icon(Icons.list_alt),
-  //               title: const Text('Exhibiciones'),
-  //               onTap: () {
-  //                 Navigator.of(context).push(Exhibiciones.route(""));
-  //               },
-  //             ),
-  //             Builder(builder: (context) {
-  //               return ListTile(
-  //                 leading: const Icon(Icons.view_module),
-  //                 title: const Text('Tareas'),
-  //                 onTap: () {
-  //                   Scaffold.of(context).closeDrawer();
-  //                 },
-  //               );
-  //             }),
-  //           ],
-  //         ),
-  //       ),
-  //       body: Container(
-  //         height: MediaQuery.of(context).size.height,
-  //         child: SingleChildScrollView(
-  //           child: Column(
-  //             children: <Widget>[
-  //               Container(
-  //                 color: const Color(0xff060024),
-  //                 padding: const EdgeInsets.only(
-  //                     top: 30, left: 20, right: 20, bottom: 30),
-  //                 child: Row(
-  //                   crossAxisAlignment: CrossAxisAlignment.center,
-  //                   children: [
-  //                     IconButton(
-  //                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-  //                       onPressed: () {
-  //                         Navigator.pop(context);
-  //                       },
-  //                     ),
-  //                     Builder(builder: (context) {
-  //                       return GestureDetector(
-  //                         onTap: () {
-  //                           Scaffold.of(context).openDrawer();
-  //                         },
-  //                         child: Image.asset(
-  //                           "assets/logo_modulo.png",
-  //                           scale: 5,
-  //                         ),
-  //                       );
-  //                     }),
-  //                     Container(
-  //                       margin: const EdgeInsets.only(left: 10),
-  //                       child: const Text(
-  //                         "Tareas",
-  //                         style: TextStyle(
-  //                             fontFamily: "Montserrat",
-  //                             color: Colors.white,
-  //                             fontWeight: FontWeight.bold,
-  //                             fontSize: 22),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //               Container(
-  //                 margin: EdgeInsets.all(10),
-  //                 child: Column(
-  //                   children: [
-  //                     Container(
-  //                       height: 20,
-  //                     ),
-  //                     const Text(
-  //                       'Selecciona una tarea',
-  //                       style:
-  //                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-  //                     ),
-  //                     const SizedBox(height: 10),
-  //                     Container(
-  //                       decoration: BoxDecoration(
-  //                         color: Colors.white,
-  //                         borderRadius:
-  //                             const BorderRadius.all(Radius.circular(5)),
-  //                         border: Border.all(
-  //                             color: const Color(0xff007DA4),
-  //                             width: 2), // Color del borde
-  //                       ),
-  //                       child: SearchChoices.single(
-  //                         dropDownDialogPadding: const EdgeInsets.all(10),
-  //                         underline: Container(),
-  //                         clearIcon:
-  //                             const Icon(Icons.close, color: Color(0xff060024)),
-  //                         iconEnabledColor: const Color(0xff060024),
-  //                         futureSearchFn: (String? searchQuery,
-  //                             String? selectedItem,
-  //                             bool? sortedBy,
-  //                             List<Tuple2<String, String>>? searchList,
-  //                             int? maxLength) async {
-  //                           return await _obtenerTareas(searchQuery, selectedItem,
-  //                               sortedBy, searchList, maxLength);
-  //                         },
-  //                         value: selectedValueSingleDialog,
-  //                         // hint: "Tiendas",
-  //                         searchHint: "Selecciona una tienda",
-  //                         onChanged: (value) {
-  //                           print("La tarea seleccionada es: $value");
-  //                           setState(() {
-  //                             selectedValueSingleDialog = value;
-  //                             _tarea = value;
-  //                           });
-  //                         },
-  //                         isExpanded: true,
-  //                       ),
-  //                     ),
-  //                     const SizedBox(height: 20),
-  //                     const Text(
-  //                       'Comentario',
-  //                       style:
-  //                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-  //                     ),
-  //                     const SizedBox(height: 10),
-  //                     Container(
-  //                       decoration: BoxDecoration(
-  //                         color: Colors.white,
-  //                         borderRadius: const BorderRadius.all(Radius.circular(5)),
-  //                         border: Border.all(
-  //                           color: const Color(0xff007DA4),
-  //                           width: 2,
-  //                         ),
-  //                       ),
-  //                       child: TextField(
-  //                         controller: _commentController,
-  //                         maxLines: 4,
-  //                         decoration: const InputDecoration(
-  //                           contentPadding: EdgeInsets.all(10),
-  //                           border: InputBorder.none,
-  //                         ),
-  //                       ),
-  //                     ),
-  //                     const SizedBox(height: 20),
-  //                     Center(
-  //                       child: ElevatedButton(
-  //                         onPressed: () {
-  //                           // Lógica para enviar los datos
-  //                           String tareaSeleccionada =
-  //                               selectedValueSingleDialog!;
-  //                           String comentario = _commentController.text;
-  //                           // Aquí puedes añadir la lógica para manejar el envío de los datos
-  //                           print('Tienda seleccionada: $tareaSeleccionada');
-  //                           print('Comentario: $comentario');
-  //                           enviarTarea(tareaSeleccionada, comentario);
-  //                         },
-  //                         style: ElevatedButton.styleFrom(
-  //                           primary: const Color(0xff007DA4),
-  //                           padding: const EdgeInsets.symmetric(
-  //                               horizontal: 40, vertical: 15),
-  //                         ),
-  //                         child: const Text(
-  //                           'Enviar',
-  //                           style: TextStyle(fontSize: 16, color: Colors.white),
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               )
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //       bottomNavigationBar: BottomNavigationBar(
-  //         backgroundColor: const Color(0xff060024),
-  //         items: const <BottomNavigationBarItem>[
-  //           BottomNavigationBarItem(
-  //             icon: Icon(Icons.home),
-  //             label: 'Inicio',
-  //           ),
-  //           BottomNavigationBarItem(
-  //             icon: Icon(Icons.open_in_new_rounded),
-  //             label: 'Tiendas',
-  //           ),
-  //         ],
-  //         currentIndex: _selectedIndex,
-  //         selectedItemColor: Colors.white,
-  //         unselectedItemColor: Colors.grey,
-  //         onTap: (int index) {
-  //           switch (index) {
-  //             case 0:
-  //               // only scroll to top when current index is selected.
-  //               if (_selectedIndex == index) {
-  //                 Navigator.of(context).pushAndRemoveUntil(
-  //                     HomeScreen.route(""), (route) => false);
-  //               }
-  //               break;
-  //             case 1:
-  //               // showModal(context);
-  //               logout();
-  //           }
-  //           setState(
-  //             () {
-  //               _selectedIndex = index;
-  //             },
-  //           );
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -542,85 +322,110 @@ class AsignacionTareasState extends State<AsignacionTareas> {
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.all(10),
+                  margin: const EdgeInsets.all(10),
                   child: Column(
                     children: [
                       Container(
                         height: 20,
                       ),
                       const Text(
-                        'Selecciona una tarea',
+                        'Ingresa una tarea',
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(5)),
-                          border: Border.all(
-                              color: const Color(0xff007DA4),
-                              width: 2), // Color del borde
+                      // Container(
+                      //   decoration: BoxDecoration(
+                      //     color: Colors.white,
+                      //     borderRadius:
+                      //         const BorderRadius.all(Radius.circular(5)),
+                      //     border: Border.all(
+                      //         color: const Color(0xff007DA4),
+                      //         width: 2), // Color del borde
+                      //   ),
+                      //   child: SearchChoices.single(
+                      //     dropDownDialogPadding: const EdgeInsets.all(10),
+                      //     underline: Container(),
+                      //     clearIcon:
+                      //         const Icon(Icons.close, color: Color(0xff060024)),
+                      //     iconEnabledColor: const Color(0xff060024),
+                      //     futureSearchFn: (String? searchQuery,
+                      //         String? selectedItem,
+                      //         bool? sortedBy,
+                      //         List<Tuple2<String, String>>? searchList,
+                      //         int? maxLength) async {
+                      //       return await _obtenerTareas(searchQuery,
+                      //           selectedItem, sortedBy, searchList, maxLength);
+                      //     },
+                      //     value: selectedValueSingleDialog,
+                      //     // hint: "Tiendas",
+                      //     searchHint: "Selecciona una tarea",
+                      //     onChanged: (value) {
+                      //       print("La tarea seleccionada es: $value");
+                      //       setState(() {
+                      //         selectedValueSingleDialog = value;
+                      //         _tarea = value;
+                      //       });
+                      //     },
+                      //     isExpanded: true,
+                      //   ),
+                      // ),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: "Tarea",
+                          floatingLabelAlignment: FloatingLabelAlignment.center,
+                          border: OutlineInputBorder(),
                         ),
-                        child: SearchChoices.single(
-                          dropDownDialogPadding: const EdgeInsets.all(10),
-                          underline: Container(),
-                          clearIcon:
-                              const Icon(Icons.close, color: Color(0xff060024)),
-                          iconEnabledColor: const Color(0xff060024),
-                          futureSearchFn: (String? searchQuery,
-                              String? selectedItem,
-                              bool? sortedBy,
-                              List<Tuple2<String, String>>? searchList,
-                              int? maxLength) async {
-                            return await _obtenerTareas(searchQuery,
-                                selectedItem, sortedBy, searchList, maxLength);
-                          },
-                          value: selectedValueSingleDialog,
-                          // hint: "Tiendas",
-                          searchHint: "Selecciona una tarea",
-                          onChanged: (value) {
-                            print("La tarea seleccionada es: $value");
-                            setState(() {
-                              selectedValueSingleDialog = value;
-                              _tarea = value;
-                            });
-                          },
-                          isExpanded: true,
-                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingresa tu usuario';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          selectedValueSingleDialog = value;
+                          _tarea = value;
+                        },
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        'Comentario',
+                        'Descripción',
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
                       Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(5)),
-                          border: Border.all(
-                            color: const Color(0xff007DA4),
-                            width: 2,
-                          ),
+                        decoration: const BoxDecoration(
+                          // color: Colors.white,
+                          borderRadius: BorderRadius.all(Radius.circular(5)),
+                          // border: Border.all(
+                          //   // color: const Color(0xff007DA4),
+                          //   color: Colors.black,
+                          //   width: 1,
+                          // ),
                         ),
                         child: TextField(
                           controller: _commentController,
                           maxLines: 4,
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.all(10),
-                            border: InputBorder.none,
+                            // border: InputBorder.none,
+                            border: OutlineInputBorder(),
+                            labelText: "Descripción",
+                            floatingLabelAlignment:
+                                FloatingLabelAlignment.center,
                           ),
                         ),
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton.icon(
                         onPressed: _pickImage,
-                        icon: const Icon(Icons.camera_alt, color: Colors.white,),
-                        label: const Text('Tomar Foto',
+                        icon: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Tomar Foto',
                           style: TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -632,8 +437,12 @@ class AsignacionTareasState extends State<AsignacionTareas> {
                       const SizedBox(height: 5),
                       ElevatedButton.icon(
                         onPressed: _pickImageGaleria,
-                        icon: const Icon(Icons.camera_indoor, color: Colors.white,),
-                        label: const Text('Tomar de galeria',
+                        icon: const Icon(
+                          Icons.camera_indoor,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Tomar de galeria',
                           style: TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -660,24 +469,23 @@ class AsignacionTareasState extends State<AsignacionTareas> {
                                   });
 
                                   try {
-                                    String tareaSeleccionada =
-                                        selectedValueSingleDialog!;
+                                    String tareaSeleccionada = _tarea;
+                                    // selectedValueSingleDialog!;
                                     String comentario = _commentController.text;
 
                                     print(
-                                        'Tienda seleccionada: $tareaSeleccionada');
+                                        'tarea seleccionada: $tareaSeleccionada');
                                     print('Comentario: $comentario');
 
                                     await enviarTarea(
                                         tareaSeleccionada, comentario);
                                   } finally {
                                     await Future.delayed(
-                                        Duration(milliseconds: 500));
+                                        const Duration(milliseconds: 500));
 
                                     if (mounted) {
                                       setState(() {
-                                        isSending =
-                                            false;
+                                        isSending = false;
                                       });
                                     }
                                   }

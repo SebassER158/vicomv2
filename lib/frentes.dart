@@ -481,7 +481,7 @@ class _MyHomePageState extends State<Frentes> {
                                 ),
                                 Flexible(
                                   child: Text(
-                                    promediosList[index]['promedio_facing'].toString()+"%",
+                                    promediosList[index]['promedio_facing'].toString(),
                                     textAlign: TextAlign.end,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold,

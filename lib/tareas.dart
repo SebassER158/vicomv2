@@ -72,6 +72,8 @@ class _MyHomePageState extends State<Tareas> {
   }
 
   void getData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    cuenta = (prefs.getString('cuenta') ?? "");
 
     try {
       var response = await Api().getTareasPendientes(cuenta, idTienda);
@@ -280,33 +282,33 @@ Widget build(BuildContext context) {
                 ),
               ),
               Container(
-                margin: EdgeInsets.all(10),
+                margin: const EdgeInsets.all(10),
                 child: Column(
                   children: [
                     Container(
                       height: 20,
                     ),
-                    const Text(
-                      'Tareas asignadas en el mes',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
-                    ),
-                    const SizedBox(height: 10),
                     Text(
-                      tareas_objetivo.toString(),
+                      'Tareas asignadas en el mes: ${tareas_objetivo.toString()}',
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
                     ),
+                    // const SizedBox(height: 10),
+                    // Text(
+                    //   tareas_objetivo.toString(),
+                    //   style:
+                    //       TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    // ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Tareas realizadas',
+                    Text(
+                      'Tareas realizadas: ${tareas_realizadasList.length.toString()}',
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
+                          const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
                     ),
                     Container(
-                      margin: EdgeInsets.all(10),
+                      margin: const EdgeInsets.all(10),
                       child: ListView.builder(
-                        physics: NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
                         itemCount: tareas_realizadas == null
                             ? 0
@@ -344,13 +346,13 @@ Widget build(BuildContext context) {
                                   },
                                   child: Image.network(
                                     "http://72.167.33.202" +
-                                        tareas_realizadas[index]['fotoF'],
+                                        tareas_realizadas[index]['imgF'],
                                     width: 40,
                                     height: 60,
                                   ),
                                 ),
                                 Container(
-                                  margin: EdgeInsets.all(10),
+                                  margin: const EdgeInsets.all(10),
                                   child: Text(
                                     fechasctring,
                                     textAlign: TextAlign.center,
@@ -362,7 +364,7 @@ Widget build(BuildContext context) {
                                   ),
                                 ),
                                 Container(
-                                  margin: EdgeInsets.all(10),
+                                  margin: const EdgeInsets.all(10),
                                   child: Text(
                                     tareas_realizadas[index]
                                         ['opcion'],
@@ -374,7 +376,7 @@ Widget build(BuildContext context) {
                                   ),
                                 ),
                                 Container(
-                                  margin: EdgeInsets.all(10),
+                                  margin: const EdgeInsets.all(10),
                                   child: Text(
                                     tareas_realizadas[index]['comentario'],
                                     style: const TextStyle(
@@ -391,15 +393,15 @@ Widget build(BuildContext context) {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Tareas pendientes',
+                    Text(
+                      'Tareas pendientes: ${tareas_pendientesList.length.toString()}',
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
+                          const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
                     ),
                     Container(
-                      margin: EdgeInsets.all(10),
+                      margin: const EdgeInsets.all(10),
                       child: ListView.builder(
-                        physics: NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
                         itemCount: tareas_pendientes == null
                             ? 0
@@ -443,7 +445,7 @@ Widget build(BuildContext context) {
                                   ),
                                 ),
                                 Container(
-                                  margin: EdgeInsets.all(10),
+                                  margin: const EdgeInsets.all(10),
                                   child: Text(
                                     fechasctring,
                                     textAlign: TextAlign.center,
@@ -455,7 +457,7 @@ Widget build(BuildContext context) {
                                   ),
                                 ),
                                 Container(
-                                  margin: EdgeInsets.all(10),
+                                  margin: const EdgeInsets.all(10),
                                   child: Text(
                                     tareas_pendientes[index]
                                         ['opcion'],
@@ -467,7 +469,7 @@ Widget build(BuildContext context) {
                                   ),
                                 ),
                                 Container(
-                                  margin: EdgeInsets.all(10),
+                                  margin: const EdgeInsets.all(10),
                                   child: Text(
                                     tareas_pendientes[index]['comentario'],
                                     style: const TextStyle(
