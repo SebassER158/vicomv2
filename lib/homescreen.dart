@@ -527,8 +527,7 @@ class _MyHomePageState extends State<HomeScreen> {
 
   void _onRefresh() async{
       // monitor network fetch
-      await Future.delayed(Duration(milliseconds: 1000));
-      print("paso en refresh");
+      getData();
       // if failed,use refreshFailed()
       _refreshController.refreshCompleted();
     }
@@ -621,12 +620,17 @@ class _MyHomePageState extends State<HomeScreen> {
           ),
         ),
         body: SmartRefresher(
-          header: const WaterDropMaterialHeader(),
+          header: const WaterDropMaterialHeader(
+            color: Color.fromRGBO(6, 0, 36, 1),
+            backgroundColor: Color(0xff007DA4),
+          ),
           onRefresh: _onRefresh,
           controller: _refreshController,
-          child: Container(
-            height: MediaQuery.of(context).size.height,
-            child: SingleChildScrollView(
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height,
+              ),
               child: Column(
                 children: <Widget>[
                   Container(

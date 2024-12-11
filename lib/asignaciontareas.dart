@@ -11,8 +11,6 @@ import 'package:vicomv2/frentes.dart';
 import 'package:vicomv2/homescreen.dart';
 import 'package:vicomv2/puntoscontrol.dart';
 import 'package:vicomv2/tareas.dart';
-import 'package:vicomv2/usuario/actividadesscreen.dart';
-import 'package:intl/intl.dart';
 import 'package:search_choices/search_choices.dart';
 import 'package:image_picker/image_picker.dart';
 

@@ -1,9 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:vicomv2/apis/api.dart';
 import 'package:vicomv2/asignaciontareas.dart';
 import 'package:vicomv2/biscreen.dart';
@@ -11,8 +8,7 @@ import 'package:vicomv2/exhibiciones.dart';
 import 'package:vicomv2/frentes.dart';
 import 'package:vicomv2/homescreen.dart';
 import 'package:vicomv2/tareas.dart';
-import 'package:vicomv2/usuario/actividadesscreen.dart';
-import 'package:intl/intl.dart';
+import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
 
 import 'loginScreen.dart';
 
@@ -67,12 +63,22 @@ class _MyHomePageState extends State<PuntosControl> {
   int _selectedIndex = 0;
   final ScrollController _homeController = ScrollController();
 
+  RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
+
   @override
   void initState() {
     super.initState();
     loginState();
     getData();
   }
+
+  void _onRefresh() async{
+      // monitor network fetch
+      getData();
+      // if failed,use refreshFailed()
+      _refreshController.refreshCompleted();
+    }
 
   void loginState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -289,341 +295,351 @@ class _MyHomePageState extends State<PuntosControl> {
             ],
           ),
         ),
-        body: Container(
-          height: MediaQuery.of(context).size.height,
+        body: SmartRefresher(
+          header: const WaterDropMaterialHeader(
+            color: Color.fromRGBO(6, 0, 36, 1),
+            backgroundColor: Color(0xff007DA4),
+          ),
+          onRefresh: _onRefresh,
+          controller: _refreshController,
           child: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                Container(
-                  color: const Color(0xff060024),
-                  padding: const EdgeInsets.only(
-                      top: 30, left: 20, right: 20, bottom: 30),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      // Image.asset(
-                      //   "assets/logo_modulo.png",
-                      //   scale: 5,
-                      // ),
-                      Builder(builder: (context) {
-                        return GestureDetector(
-                          onTap: () {
-                            Scaffold.of(context).openDrawer();
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height,
+              ),
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    color: const Color(0xff060024),
+                    padding: const EdgeInsets.only(
+                        top: 30, left: 20, right: 20, bottom: 30),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () {
+                            Navigator.pop(context);
                           },
-                          child: Image.asset(
-                            "assets/logo_modulo.png",
-                            scale: 5,
-                          ),
-                        );
-                      }),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: const Text(
-                          "Puntos de Control",
-                          style: TextStyle(
-                              fontFamily: "Montserrat",
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22),
                         ),
-                      ),
-                    ],
+                        // Image.asset(
+                        //   "assets/logo_modulo.png",
+                        //   scale: 5,
+                        // ),
+                        Builder(builder: (context) {
+                          return GestureDetector(
+                            onTap: () {
+                              Scaffold.of(context).openDrawer();
+                            },
+                            child: Image.asset(
+                              "assets/logo_modulo.png",
+                              scale: 5,
+                            ),
+                          );
+                        }),
+                        Container(
+                          margin: const EdgeInsets.only(left: 10),
+                          child: const Text(
+                            "Puntos de Control",
+                            style: TextStyle(
+                                fontFamily: "Montserrat",
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Container(
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                color: const Color(0xff007DA4),
-                                border: Border.all(
-                                    color: const Color(0xff007DA4), width: 2),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(5),
-                                  bottomLeft: Radius.circular(5),
-                                )),
-                            child: const Text(
-                              "Formato:",
-                              style: TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.white,
-                                  fontSize: 16),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: const Color(0xff007DA4), width: 2),
-                                borderRadius: const BorderRadius.only(
-                                  topRight: Radius.circular(5),
-                                  bottomRight: Radius.circular(5),
-                                )),
-                            child: Text(
-                              formato,
-                              style: const TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.black,
-                                  fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                color: const Color(0xff007DA4),
-                                border: Border.all(
-                                    color: const Color(0xff007DA4), width: 2),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(5),
-                                  bottomLeft: Radius.circular(5),
-                                )),
-                            child: const Text(
-                              "Tienda:",
-                              style: TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.white,
-                                  fontSize: 16),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: const Color(0xff007DA4), width: 2),
-                                borderRadius: const BorderRadius.only(
-                                  topRight: Radius.circular(5),
-                                  bottomRight: Radius.circular(5),
-                                )),
-                            child: Text(
-                              tienda,
-                              style: const TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.black,
-                                  fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      const Divider(
-                        color: Colors.white10,
-                        thickness: 2,
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Center(
-                              child: Text(
-                                "Objetivo:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                objetivo,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Expanded(
-                            child: Center(
-                              child: Text(
-                                "Ejecutado:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                ejecutado,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Expanded(
-                            child: Center(
-                              child: Text(
-                                "Avance:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                "$avance%",
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                            border: Border.all(
-                                color: const Color(0xff007DA4), width: 2),
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(5),
-                              bottomRight: Radius.circular(5),
-                            )),
-                        child: Text(
-                          "Puntos de Control Ejecutados",
-                          style: const TextStyle(
-                              fontFamily: "Montserrat",
-                              color: Colors.black,
-                              fontSize: 16),
+                  Container(
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 20,
                         ),
-                      ),
-                      Container(
-                        margin: EdgeInsets.all(15),
-                        child: ListView.builder(
-                          // physics: const AlwaysScrollableScrollPhysics(),
-                          physics: NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: pcEjecutadosList == null
-                              ? 0
-                              : pcEjecutadosList.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    pcEjecutadosList[index]['opcion'],
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                  color: const Color(0xff007DA4),
+                                  border: Border.all(
+                                      color: const Color(0xff007DA4), width: 2),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(5),
+                                    bottomLeft: Radius.circular(5),
+                                  )),
+                              child: const Text(
+                                "Formato:",
+                                style: TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.white,
+                                    fontSize: 16),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: const Color(0xff007DA4), width: 2),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(5),
+                                    bottomRight: Radius.circular(5),
+                                  )),
+                              child: Text(
+                                formato,
+                                style: const TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.black,
+                                    fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          height: 20,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                  color: const Color(0xff007DA4),
+                                  border: Border.all(
+                                      color: const Color(0xff007DA4), width: 2),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(5),
+                                    bottomLeft: Radius.circular(5),
+                                  )),
+                              child: const Text(
+                                "Tienda:",
+                                style: TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.white,
+                                    fontSize: 16),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: const Color(0xff007DA4), width: 2),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(5),
+                                    bottomRight: Radius.circular(5),
+                                  )),
+                              child: Text(
+                                tienda,
+                                style: const TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.black,
+                                    fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          height: 20,
+                        ),
+                        const Divider(
+                          color: Colors.white10,
+                          thickness: 2,
+                        ),
+                        Container(
+                          height: 20,
+                        ),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Center(
+                                child: Text(
+                                  "Objetivo:",
+                                  style: TextStyle(
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black,
+                                      fontSize: 16),
                                 ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                            border: Border.all(
-                                color: const Color(0xff007DA4), width: 2),
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(5),
-                              bottomRight: Radius.circular(5),
-                            )),
-                        child: Text(
-                          "Puntos de Control Pendientes",
-                          style: const TextStyle(
-                              fontFamily: "Montserrat",
-                              color: Colors.black,
-                              fontSize: 16),
-                        ),
-                      ),
-                      Container(
-                        margin: EdgeInsets.all(15),
-                        child: ListView.builder(
-                          // physics: const AlwaysScrollableScrollPhysics(),
-                          physics: NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: pcPendienteList == null
-                              ? 0
-                              : pcPendienteList.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    pcPendienteList[index]['opcion'],
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  objetivo,
+                                  style: const TextStyle(
+                                      fontFamily: "Montserrat",
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                      fontSize: 16),
                                 ),
-                              ],
-                            );
-                          },
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        Container(
+                          height: 20,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            const Expanded(
+                              child: Center(
+                                child: Text(
+                                  "Ejecutado:",
+                                  style: TextStyle(
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black,
+                                      fontSize: 16),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  ejecutado,
+                                  style: const TextStyle(
+                                      fontFamily: "Montserrat",
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                      fontSize: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          height: 20,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            const Expanded(
+                              child: Center(
+                                child: Text(
+                                  "Avance:",
+                                  style: TextStyle(
+                                      fontFamily: "Montserrat",
+                                      color: Colors.black,
+                                      fontSize: 16),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  "$avance%",
+                                  style: const TextStyle(
+                                      fontFamily: "Montserrat",
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                      fontSize: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          height: 20,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                              border: Border.all(
+                                  color: const Color(0xff007DA4), width: 2),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(5),
+                                bottomRight: Radius.circular(5),
+                              )),
+                          child: Text(
+                            "Puntos de Control Ejecutados",
+                            style: const TextStyle(
+                                fontFamily: "Montserrat",
+                                color: Colors.black,
+                                fontSize: 16),
+                          ),
+                        ),
+                        Container(
+                          margin: EdgeInsets.all(15),
+                          child: ListView.builder(
+                            // physics: const AlwaysScrollableScrollPhysics(),
+                            physics: NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: pcEjecutadosList == null
+                                ? 0
+                                : pcEjecutadosList.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      pcEjecutadosList[index]['opcion'],
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                        Container(
+                          height: 20,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                              border: Border.all(
+                                  color: const Color(0xff007DA4), width: 2),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(5),
+                                bottomRight: Radius.circular(5),
+                              )),
+                          child: Text(
+                            "Puntos de Control Pendientes",
+                            style: const TextStyle(
+                                fontFamily: "Montserrat",
+                                color: Colors.black,
+                                fontSize: 16),
+                          ),
+                        ),
+                        Container(
+                          margin: EdgeInsets.all(15),
+                          child: ListView.builder(
+                            // physics: const AlwaysScrollableScrollPhysics(),
+                            physics: NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: pcPendienteList == null
+                                ? 0
+                                : pcPendienteList.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      pcPendienteList[index]['opcion'],
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

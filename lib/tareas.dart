@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:search_choices/search_choices.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
 
 import 'loginScreen.dart';
 
@@ -54,12 +55,22 @@ class _MyHomePageState extends State<Tareas> {
 
   final ImagePicker _picker = ImagePicker();
 
+  RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
+
   @override
   void initState() {
     super.initState();
     loginState();
     getData();
   }
+
+  void _onRefresh() async{
+      // monitor network fetch
+      getData();
+      // if failed,use refreshFailed()
+      _refreshController.refreshCompleted();
+    }
 
   void loginState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -238,258 +249,268 @@ Widget build(BuildContext context) {
           ],
         ),
       ),
-      body: Container(
-        height: MediaQuery.of(context).size.height,
+      body: SmartRefresher(
+        header: const WaterDropMaterialHeader(
+            color: Color.fromRGBO(6, 0, 36, 1),
+            backgroundColor: Color(0xff007DA4),
+          ),
+          onRefresh: _onRefresh,
+          controller: _refreshController,
         child: SingleChildScrollView(
-          child: Column(
-            children: <Widget>[
-              Container(
-                color: const Color(0xff060024),
-                padding: const EdgeInsets.only(
-                    top: 30, left: 20, right: 20, bottom: 30),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                    Builder(builder: (context) {
-                      return GestureDetector(
-                        onTap: () {
-                          Scaffold.of(context).openDrawer();
-                        },
-                        child: Image.asset(
-                          "assets/logo_modulo.png",
-                          scale: 5,
-                        ),
-                      );
-                    }),
-                    Container(
-                      margin: const EdgeInsets.only(left: 10),
-                      child: const Text(
-                        "Tareas",
-                        style: TextStyle(
-                            fontFamily: "Montserrat",
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22),
-                      ),
-                    ),
-                  ],
-                ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height,
               ),
-              Container(
-                margin: const EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    Container(
-                      height: 20,
-                    ),
-                    Text(
-                      'Tareas asignadas en el mes: ${tareas_objetivo.toString()}',
-                      style:
-                          const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
-                    ),
-                    // const SizedBox(height: 10),
-                    // Text(
-                    //   tareas_objetivo.toString(),
-                    //   style:
-                    //       TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    // ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Tareas realizadas: ${tareas_realizadasList.length.toString()}',
-                      style:
-                          const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.all(10),
-                      child: ListView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: tareas_realizadas == null
-                            ? 0
-                            : tareas_realizadas.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          DateTime fechaFl = DateTime.parse(
-                                  tareas_realizadas[index]['fecha'])
-                              .toLocal();
-                          DateTime nuevaFechaFl =
-                              fechaFl.add(const Duration(hours: -1));
-                          String fechasctring =
-                              DateFormat('dd-MM-yyyy')
-                                  .format(nuevaFechaFl);
-
-                          return SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              verticalDirection: VerticalDirection.up,
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (_) => Dialog(
-                                        child: PhotoView(
-                                          imageProvider: NetworkImage(
-                                            "http://72.167.33.202" +
-                                                tareas_realizadas[index]
-                                                    ['fotoF'],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Image.network(
-                                    "http://72.167.33.202" +
-                                        tareas_realizadas[index]['imgF'],
-                                    width: 40,
-                                    height: 60,
-                                  ),
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.all(10),
-                                  child: Text(
-                                    fechasctring,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.all(10),
-                                  child: Text(
-                                    tareas_realizadas[index]
-                                        ['opcion'],
-                                    style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.all(10),
-                                  child: Text(
-                                    tareas_realizadas[index]['comentario'],
-                                    style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
+            child: Column(
+              children: <Widget>[
+                Container(
+                  color: const Color(0xff060024),
+                  padding: const EdgeInsets.only(
+                      top: 30, left: 20, right: 20, bottom: 30),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () {
+                          Navigator.pop(context);
                         },
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Tareas pendientes: ${tareas_pendientesList.length.toString()}',
-                      style:
-                          const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.all(10),
-                      child: ListView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: tareas_pendientes == null
-                            ? 0
-                            : tareas_pendientes.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          DateTime fechaFl = DateTime.parse(
-                                  tareas_pendientes[index]['fecha'])
-                              .toLocal();
-                          DateTime nuevaFechaF2 =
-                              fechaFl.add(const Duration(hours: -1));
-                          String fechasctring =
-                              DateFormat('dd-MM-yyyy')
-                                  .format(nuevaFechaF2);
-
-                          return SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              verticalDirection: VerticalDirection.up,
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (_) => Dialog(
-                                        child: PhotoView(
-                                          imageProvider: NetworkImage(
-                                            "http://72.167.33.202" +
-                                                tareas_pendientes[index]
-                                                    ['imgF'],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Image.network(
-                                    "http://72.167.33.202" +
-                                        tareas_pendientes[index]['imgF'],
-                                    width: 40,
-                                    height: 60,
-                                  ),
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.all(10),
-                                  child: Text(
-                                    fechasctring,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.all(10),
-                                  child: Text(
-                                    tareas_pendientes[index]
-                                        ['opcion'],
-                                    style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.all(10),
-                                  child: Text(
-                                    tareas_pendientes[index]['comentario'],
-                                    style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                      Builder(builder: (context) {
+                        return GestureDetector(
+                          onTap: () {
+                            Scaffold.of(context).openDrawer();
+                          },
+                          child: Image.asset(
+                            "assets/logo_modulo.png",
+                            scale: 5,
+                          ),
+                        );
+                      }),
+                      Container(
+                        margin: const EdgeInsets.only(left: 10),
+                        child: const Text(
+                          "Tareas",
+                          style: TextStyle(
+                              fontFamily: "Montserrat",
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 22),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
+                    ],
+                  ),
                 ),
-              )
-            ],
+                Container(
+                  margin: const EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 20,
+                      ),
+                      Text(
+                        'Tareas asignadas en el mes: ${tareas_objetivo.toString()}',
+                        style:
+                            const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
+                      ),
+                      // const SizedBox(height: 10),
+                      // Text(
+                      //   tareas_objetivo.toString(),
+                      //   style:
+                      //       TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      // ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Tareas realizadas: ${tareas_realizadasList.length.toString()}',
+                        style:
+                            const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.all(10),
+                        child: ListView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: tareas_realizadas == null
+                              ? 0
+                              : tareas_realizadas.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            DateTime fechaFl = DateTime.parse(
+                                    tareas_realizadas[index]['fecha'])
+                                .toLocal();
+                            DateTime nuevaFechaFl =
+                                fechaFl.add(const Duration(hours: -1));
+                            String fechasctring =
+                                DateFormat('dd-MM-yyyy')
+                                    .format(nuevaFechaFl);
+                    
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                verticalDirection: VerticalDirection.up,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => Dialog(
+                                          child: PhotoView(
+                                            imageProvider: NetworkImage(
+                                              "http://72.167.33.202" +
+                                                  tareas_realizadas[index]
+                                                      ['fotoF'],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Image.network(
+                                      "http://72.167.33.202" +
+                                          tareas_realizadas[index]['imgF'],
+                                      width: 40,
+                                      height: 60,
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    child: Text(
+                                      fechasctring,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    child: Text(
+                                      tareas_realizadas[index]
+                                          ['opcion'],
+                                      style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    child: Text(
+                                      tareas_realizadas[index]['comentario'],
+                                      style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Tareas pendientes: ${tareas_pendientesList.length.toString()}',
+                        style:
+                            const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.all(10),
+                        child: ListView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: tareas_pendientes == null
+                              ? 0
+                              : tareas_pendientes.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            DateTime fechaFl = DateTime.parse(
+                                    tareas_pendientes[index]['fecha'])
+                                .toLocal();
+                            DateTime nuevaFechaF2 =
+                                fechaFl.add(const Duration(hours: -1));
+                            String fechasctring =
+                                DateFormat('dd-MM-yyyy')
+                                    .format(nuevaFechaF2);
+                    
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                verticalDirection: VerticalDirection.up,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => Dialog(
+                                          child: PhotoView(
+                                            imageProvider: NetworkImage(
+                                              "http://72.167.33.202" +
+                                                  tareas_pendientes[index]
+                                                      ['imgF'],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Image.network(
+                                      "http://72.167.33.202" +
+                                          tareas_pendientes[index]['imgF'],
+                                      width: 40,
+                                      height: 60,
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    child: Text(
+                                      fechasctring,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    child: Text(
+                                      tareas_pendientes[index]
+                                          ['opcion'],
+                                      style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    child: Text(
+                                      tareas_pendientes[index]['comentario'],
+                                      style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                )
+              ],
+            ),
           ),
         ),
       ),
