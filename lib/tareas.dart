@@ -338,10 +338,19 @@ Widget build(BuildContext context) {
                                     tareas_realizadas[index]['fecha'])
                                 .toLocal();
                             DateTime nuevaFechaFl =
-                                fechaFl.add(const Duration(hours: -1));
+                                fechaFl.add(const Duration(hours: -2));
                             String fechasctring =
-                                DateFormat('dd-MM-yyyy')
+                                DateFormat('dd-MM-yyyy\nhh:mm')
                                     .format(nuevaFechaFl);
+
+                            DateTime fechaF2 = DateTime.parse(
+                                    tareas_realizadas[index]['fecha_retro'])
+                                .toLocal();
+                            DateTime nuevaFechaF2 =
+                                fechaF2.add(const Duration(hours: -2));
+                            String fechasctring2 =
+                                DateFormat('dd-MM-yyyy\nhh:mm')
+                                    .format(nuevaFechaF2);
                     
                             return SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
@@ -358,7 +367,7 @@ Widget build(BuildContext context) {
                                             imageProvider: NetworkImage(
                                               "http://72.167.33.202" +
                                                   tareas_realizadas[index]
-                                                      ['fotoF'],
+                                                      ['imgF'],
                                             ),
                                           ),
                                         ),
@@ -404,6 +413,51 @@ Widget build(BuildContext context) {
                                         color: Colors.black,
                                         fontSize: 16,
                                       ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    child: Text(
+                                      fechasctring2,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.all(10),
+                                    child: Text(
+                                      tareas_realizadas[index]['comentario_retro'],
+                                      style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => Dialog(
+                                          child: PhotoView(
+                                            imageProvider: NetworkImage(
+                                              "http://72.167.33.202" +
+                                                  tareas_realizadas[index]
+                                                      ['imgF_retro'],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Image.network(
+                                      "http://72.167.33.202" +
+                                          tareas_realizadas[index]['imgF_retro'],
+                                      width: 40,
+                                      height: 60,
                                     ),
                                   ),
                                 ],
