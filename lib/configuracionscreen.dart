@@ -91,6 +91,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   Widget build(BuildContext context) {
     if (newuser == false) {
       return MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Stack(
           children: [
             // Image.asset(
