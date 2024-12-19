@@ -910,7 +910,7 @@ class _MyHomePageState extends State<HomeScreen> {
                                       topRight: Radius.circular(5),
                                     )),
                                 child: const Text(
-                                  "S.O al dia::",
+                                  "S.O al dia:",
                                   style: TextStyle(
                                       fontFamily: "Montserrat",
                                       color: Colors.white,
