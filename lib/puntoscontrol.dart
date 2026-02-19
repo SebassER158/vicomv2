@@ -9,6 +9,7 @@ import 'package:vicomv2/frentes.dart';
 import 'package:vicomv2/homescreen.dart';
 import 'package:vicomv2/tareas.dart';
 import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
+import 'package:vicomv2/widgets/app_drawer.dart';
 
 import 'loginScreen.dart';
 
@@ -66,19 +67,45 @@ class _MyHomePageState extends State<PuntosControl> {
   RefreshController _refreshController =
       RefreshController(initialRefresh: false);
 
+  Map<String, bool> availableModules = {};
+  bool loadingModules = true;
+
   @override
   void initState() {
     super.initState();
     loginState();
+    loadModules();
     getData();
   }
 
-  void _onRefresh() async{
-      // monitor network fetch
-      getData();
-      // if failed,use refreshFailed()
-      _refreshController.refreshCompleted();
-    }
+  Future<void> loadModules() async {
+    final modules = await getStoredModules();
+
+    setState(() {
+      availableModules = modules;
+      loadingModules = false;
+    });
+
+    print('Módulos cargados en Home: $availableModules');
+  }
+
+  Future<Map<String, bool>> getStoredModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('available_modules');
+
+    if (raw == null) return {};
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+    return decoded.map((key, value) => MapEntry(key, value == true));
+  }
+
+  void _onRefresh() async {
+    // monitor network fetch
+    getData();
+    // if failed,use refreshFailed()
+    _refreshController.refreshCompleted();
+  }
 
   void loginState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -219,81 +246,9 @@ class _MyHomePageState extends State<PuntosControl> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         key: _scaffoldKey,
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              DrawerHeader(
-                  decoration: const BoxDecoration(
-                    color: Color(0xff060024),
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      "assets/logo_app.png",
-                      scale: 6,
-                    ),
-                  )),
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Inicio'),
-                onTap: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                      HomeScreen.route(""), (route) => false);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.store),
-                title: const Text('Tiendas'),
-                onTap: () {
-                  logout();
-                },
-              ),
-              Builder(builder: (context) {
-                return ListTile(
-                  leading: const Icon(Icons.view_module),
-                  title: const Text('Puntos de control'),
-                  onTap: () {
-                    Scaffold.of(context).closeDrawer();
-                  },
-                );
-              }),
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Exhibiciones'),
-                onTap: () {
-                  Navigator.of(context).push(Exhibiciones.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Frentes'),
-                onTap: () {
-                  Navigator.of(context).push(Frentes.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Asignación de tareas'),
-                onTap: () {
-                  Navigator.of(context).push(AsignacionTareas.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Tareas'),
-                onTap: () {
-                  Navigator.of(context).push(Tareas.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('BI'),
-                onTap: () {
-                  Navigator.of(context).push(BiScreen.route(""));
-                },
-              ),
-            ],
-          ),
+        drawer: AppDrawer(
+          onLogout: logout,
+          availableModules: availableModules,
         ),
         body: SmartRefresher(
           header: const WaterDropMaterialHeader(
@@ -317,7 +272,8 @@ class _MyHomePageState extends State<PuntosControl> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
                           onPressed: () {
                             Navigator.pop(context);
                           },
@@ -570,7 +526,8 @@ class _MyHomePageState extends State<PuntosControl> {
                                 : pcEjecutadosList.length,
                             itemBuilder: (BuildContext context, int index) {
                               return Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
                                 children: [
                                   Flexible(
                                     child: Text(
@@ -618,7 +575,8 @@ class _MyHomePageState extends State<PuntosControl> {
                                 : pcPendienteList.length,
                             itemBuilder: (BuildContext context, int index) {
                               return Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
                                 children: [
                                   Flexible(
                                     child: Text(

@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:vicomv2/Iniciosesion.dart';
+import 'package:vicomv2/apis/api.dart';
+import 'package:vicomv2/providers/modules_provider.dart';
+
 
 class ConfiguracionScreen extends StatefulWidget {
   const ConfiguracionScreen({super.key});
@@ -45,7 +48,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     if (newuser == true) {
       print("Paso por configurado true");
       // ignore: use_build_context_synchronously
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Iniciosesion()));
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (context) => const Iniciosesion()));
       //Navigator.of(context).push(HomeScreen.route());
     }
   }
@@ -57,7 +61,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   }
 
   Future userLogin(nip) async {
-    var url = "http://72.167.33.202:2020/getValuesTableByCuenta/sicom/cuentas/$nip";
+    var url = "${Api().server}/getValuesTableByCuenta/sicom/cuentas/$nip";
+    print(url);
     http.Response response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
@@ -70,6 +75,29 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
         setState(() {
           isLoading = false;
         });
+
+        // try {
+        //   final response = await Api().getAvailableModules(nip);
+
+        //   if (response.statusCode == 200) {
+        //     final data = jsonDecode(response.body);
+
+        //     if (data['success'] == true) {
+        //       final prefs = await SharedPreferences.getInstance();
+
+        //       // Guardamos el mapa completo como JSON
+        //       await prefs.setString(
+        //         'available_modules',
+        //         jsonEncode(data['modules']),
+        //       );
+        //     }
+        //   }
+        // } catch (e) {
+        //   print('Error cargando módulos: $e');
+        // }
+
+        //Se cambio a la seleccion de tiendas
+
         Navigator.of(context).pushReplacement(Iniciosesion.route());
       } else {
         Fluttertoast.showToast(
@@ -103,7 +131,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
             Scaffold(
               backgroundColor: Color(0xff060024),
               body: Center(
-                child: SingleChildScrollView(child: Container(child: loginForm())),
+                child:
+                    SingleChildScrollView(child: Container(child: loginForm())),
               ),
             ),
           ],
@@ -122,7 +151,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.start,
       children: <Widget>[
-        Image.asset('assets/logo_login.png',
+        Image.asset(
+          'assets/logo_login.png',
           scale: 4,
         ),
         Container(
@@ -175,7 +205,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                     keyboardType: TextInputType.text,
                     textAlign: TextAlign.center,
                     textAlignVertical: TextAlignVertical.center,
-                    style: const TextStyle(fontFamily: "Montserrat",
+                    style: const TextStyle(
+                        fontFamily: "Montserrat",
                         fontSize: 20.0,
                         fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
@@ -183,11 +214,13 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                       filled: true,
                       fillColor: Colors.white,
                       focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: Color(0xff007DA4), width: 2.5),
+                        borderSide: const BorderSide(
+                            color: Color(0xff007DA4), width: 2.5),
                         borderRadius: BorderRadius.circular(5.0),
                       ),
                       enabledBorder: UnderlineInputBorder(
-                        borderSide: const BorderSide(color: Color(0xff007DA4), width: 2.5),
+                        borderSide: const BorderSide(
+                            color: Color(0xff007DA4), width: 2.5),
                         borderRadius: BorderRadius.circular(5.0),
                       ),
                     ),
@@ -196,7 +229,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                 ),
                 !isLoading
                     ? Container(
-                      padding: const EdgeInsets.all(5),
+                        padding: const EdgeInsets.all(5),
                         margin: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.white, width: 2),
@@ -213,18 +246,18 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.all(5),
-                            alignment: Alignment.center,
-                            // ignore: sort_child_properties_last
-                            child: const Text(
-                              "ENTRAR",
-                              style: TextStyle(fontFamily: "Montserrat",
-                                fontSize: 20.0,
-                                color: Colors.white,
+                              padding: const EdgeInsets.all(5),
+                              alignment: Alignment.center,
+                              // ignore: sort_child_properties_last
+                              child: const Text(
+                                "ENTRAR",
+                                style: TextStyle(
+                                  fontFamily: "Montserrat",
+                                  fontSize: 20.0,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            color: Color(0xff007DA4)
-                          ),
+                              color: Color(0xff007DA4)),
                         ),
                       )
                     : Container(

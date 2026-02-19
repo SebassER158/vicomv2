@@ -3,10 +3,12 @@ import 'package:http/http.dart' as http;
 
 class Api {
 
-  
+  String server = "http://72.167.33.202:2020";
+  // String server = "http://193.203.165.213:2025";
+
   saveTareas(
       String cuenta, int tienda, String tarea, String comentario) async {
-    var url = "http://72.167.33.202:2020/postSaveTareas";
+    var url = "$server/postSaveTareas";
     return await http.post(Uri.parse(url),
         body: json.encode({
           "db": cuenta,
@@ -22,7 +24,7 @@ class Api {
 
   postSaveTareasFoto(
       int tienda, String tarea, String comentario, String cuenta, String nombre, String imagen64) async {
-    var url = "http://72.167.33.202:2020/postSaveTareasFoto";
+    var url = "$server/postSaveTareasFoto";
     return await http.post(Uri.parse(url),
         body: json.encode({
           "tienda": tienda,
@@ -40,7 +42,7 @@ class Api {
 
   postSaveTareasFotoAsignadas(
       int tienda, String tarea, String comentario, String cuenta, String nombre, String imagen64) async {
-    var url = "http://72.167.33.202:2020/postSaveTareasFotoAsignadas";
+    var url = "$server/postSaveTareasFotoAsignadas";
     return await http.post(Uri.parse(url),
         body: json.encode({
           "tienda": tienda,
@@ -57,208 +59,213 @@ class Api {
   }
 
   getActividades(String cuenta, int id, String fecha) async{
-    var url = "http://72.167.33.202:2020/getActividadesPromotor/$cuenta/$id/$fecha";
+    var url = "$server/getActividadesPromotor/$cuenta/$id/$fecha";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
-  getTiendas(String cuenta, String tabla) async{
-    var url = "http://72.167.33.202:2020/getTableListValues/$cuenta/$tabla";
+  getValoresTabla(String cuenta, String tabla) async{
+    var url = "$server/getTableListValues/$cuenta/$tabla";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getFechaCadena(String cuenta, String cadena) async{
-    var url = "http://72.167.33.202:2020/getFechaCadena/$cuenta/$cadena";
+    var url = "$server/getFechaCadena/$cuenta/$cadena";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getUltimaVisita(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getUltimaVisita/$cuenta/$tiendaId";
+    var url = "$server/getUltimaVisita/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getTotalVisitas(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getTotalVisitas/$cuenta/$tiendaId";
+    var url = "$server/getTotalVisitas/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getTotalVisitasDetalle(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getTotalVisitasDetalle/$cuenta/$tiendaId";
+    var url = "$server/getTotalVisitasDetalle/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getEstadiaTienda(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getEstadiaTienda/$cuenta/$tiendaId";
+    var url = "$server/getEstadiaTienda/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getTotalEstadia(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getTotalEstadia/$cuenta/$tiendaId";
+    var url = "$server/getTotalEstadia/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getObjetivosPc(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getObjetivosPc/$cuenta/$tiendaId";
+    var url = "$server/getObjetivosPc/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getEjecutadoPc(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getEjecutadoPc/$cuenta/$tiendaId";
+    var url = "$server/getEjecutadoPc/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getAvancePc(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getAvancePc/$cuenta/$tiendaId";
+    var url = "$server/getAvancePc/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getPcEjecutado(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getPcEjecutado/$cuenta/$tiendaId";
+    var url = "$server/getPcEjecutado/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getPcPendiente(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getPcPendiente/$cuenta/$tiendaId";
+    var url = "$server/getPcPendiente/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getObjetivosEx(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getObjetivosEx/$cuenta/$tiendaId";
+    var url = "$server/getObjetivosEx/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getEjecutadoEx(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getEjecutadoEx/$cuenta/$tiendaId";
+    var url = "$server/getEjecutadoEx/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getAvanceEx(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getAvanceEx/$cuenta/$tiendaId";
+    var url = "$server/getAvanceEx/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getObjetivosLi(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getObjetivosLi/$cuenta/$tiendaId";
+    var url = "$server/getObjetivosLi/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getEjecutadoLi(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getEjecutadoLi/$cuenta/$tiendaId";
+    var url = "$server/getEjecutadoLi/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getAvanceLi(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getAvanceLi/$cuenta/$tiendaId";
+    var url = "$server/getAvanceLi/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getFrentesTienda(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getFrentesTienda/$cuenta/$tiendaId";
+    var url = "$server/getFrentesTienda/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getPromedioCadena(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getPromedioCadena/$cuenta/$tiendaId";
+    var url = "$server/getPromedioCadena/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getPromedioFrentesMarca(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getPromedioFrentesMarca/$cuenta/$tiendaId";
+    var url = "$server/getPromedioFrentesMarca/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getCumplimientoVisita(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getCumplimientoVisita/$cuenta/$tiendaId";
+    var url = "$server/getCumplimientoVisita/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getDatosSo(String cuenta, String cadena, int determinante) async{
-    var url = "http://72.167.33.202:2020/getDatosSo/$cuenta/$cadena/$determinante";
+    var url = "$server/getDatosSo/$cuenta/$cadena/$determinante";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getDatosPuntosControl(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getDatosPuntosControl/$cuenta/$tiendaId";
+    var url = "$server/getDatosPuntosControl/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getDatosExhibicion(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getDatosExhibicion/$cuenta/$tiendaId";
+    var url = "$server/getDatosExhibicion/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getDatosLineal(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getDatosLineal/$cuenta/$tiendaId";
+    var url = "$server/getDatosLineal/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getExhibicionesPrueba(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getExhibicionesPrueba/$cuenta/$tiendaId";
+    var url = "$server/getExhibicionesPrueba/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getTareasAsignadasMes(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getTareasAsignadasMes/$cuenta/$tiendaId";
+    var url = "$server/getTareasAsignadasMes/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getTareasRealizadas(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getTareasRealizadas/$cuenta/$tiendaId";
+    var url = "$server/getTareasRealizadas/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   getTareasPendientes(String cuenta, int tiendaId) async{
-    var url = "http://72.167.33.202:2020/getTareasPendientes/$cuenta/$tiendaId";
+    var url = "$server/getTareasPendientes/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }
 
   saveModelos(String cuenta, int user_id, String modelo) async{
-    var url = "http://72.167.33.202:2020/saveModelos/$cuenta/$user_id/$modelo";
+    var url = "$server/saveModelos/$cuenta/$user_id/$modelo";
     return await http.get(Uri.parse(url));
   }
 
   getUserLogin(String cuenta, String user, String pass) async{
-    var url = "http://72.167.33.202:2020/getUserLogin/$cuenta/$user/$pass";
+    var url = "$server/getUserLogin/$cuenta/$user/$pass";
     return await http.get(Uri.parse(url));
   }
 
   getCheckTareas(String cuenta, String tarea, int tienda) async{
-    var url = "http://72.167.33.202:2020/getCheckTareas/$cuenta/$tarea/$tienda";
+    var url = "$server/getCheckTareas/$cuenta/$tarea/$tienda";
     return await http.get(Uri.parse(url));
   }
 
   getCheckTareasAsignadas(String cuenta, String tarea, int tienda) async{
-    var url = "http://72.167.33.202:2020/getCheckTareasAsignadas/$cuenta/$tarea/$tienda";
+    var url = "$server/getCheckTareasAsignadas/$cuenta/$tarea/$tienda";
+    return await http.get(Uri.parse(url));
+  }
+
+  getAvailableModules(String cuenta) async{
+    var url = "$server/getAvailableModules/$cuenta";
     return await http.get(Uri.parse(url));
   }
 

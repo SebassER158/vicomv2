@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vicomv2/apis/api.dart';
 import 'package:vicomv2/homescreen.dart';
+import 'package:vicomv2/widgets/app_drawer.dart';
 
 import 'loginScreen.dart';
 
@@ -48,11 +49,37 @@ class _MyHomePageState extends State<Lineal> {
 
   int _selectedIndex = 0;
 
+  Map<String, bool> availableModules = {};
+  bool loadingModules = true;
+
   @override
   void initState() {
     super.initState();
     loginState();
+    loadModules();
     getData();
+  }
+
+  Future<void> loadModules() async {
+    final modules = await getStoredModules();
+
+    setState(() {
+      availableModules = modules;
+      loadingModules = false;
+    });
+
+    print('Módulos cargados en Home: $availableModules');
+  }
+
+  Future<Map<String, bool>> getStoredModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('available_modules');
+
+    if (raw == null) return {};
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+    return decoded.map((key, value) => MapEntry(key, value == true));
   }
 
   void loginState() async {
@@ -66,7 +93,6 @@ class _MyHomePageState extends State<Lineal> {
   }
 
   void getData() async {
-    
     try {
       var response2 = await Api().getObjetivosLi(cuenta, idTienda);
       if (response2.statusCode == 200) {
@@ -119,7 +145,8 @@ class _MyHomePageState extends State<Lineal> {
             avancesList = avances ?? "[]";
 
             if (avancesList.isNotEmpty) {
-              avance = (avancesList[0]['avance_porcentaje'] ?? 0).toStringAsFixed(2);
+              avance =
+                  (avancesList[0]['avance_porcentaje'] ?? 0).toStringAsFixed(2);
             }
           });
         }
@@ -129,8 +156,6 @@ class _MyHomePageState extends State<Lineal> {
     } catch (e) {
       print("Error de conexión: $e");
     }
-
-    
   }
 
   void logout() async {
@@ -159,37 +184,9 @@ class _MyHomePageState extends State<Lineal> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         key: _scaffoldKey,
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              DrawerHeader(
-                  decoration: const BoxDecoration(
-                    color: Color(0xff060024),
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      "assets/logo_app.png",
-                      scale: 6,
-                    ),
-                  )),
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Inicio'),
-                onTap: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                      HomeScreen.route(""), (route) => false);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.store),
-                title: const Text('Tiendas'),
-                onTap: () {
-                  logout();
-                },
-              ),
-            ],
-          ),
+        drawer: AppDrawer(
+          onLogout: logout,
+          availableModules: availableModules,
         ),
         body: Container(
           height: MediaQuery.of(context).size.height,
@@ -209,24 +206,23 @@ class _MyHomePageState extends State<Lineal> {
                           Navigator.pop(context);
                         },
                       ),
-                      Builder(
-                        builder: (context) {
-                          return GestureDetector(
-                            onTap: (){
-                              Scaffold.of(context).openDrawer();
-                            },
-                            child: Image.asset(
-                              "assets/logo_modulo.png",
-                              scale: 5,
-                            ),
-                          );
-                        }
-                      ),
+                      Builder(builder: (context) {
+                        return GestureDetector(
+                          onTap: () {
+                            Scaffold.of(context).openDrawer();
+                          },
+                          child: Image.asset(
+                            "assets/logo_modulo.png",
+                            scale: 5,
+                          ),
+                        );
+                      }),
                       Container(
                         margin: const EdgeInsets.only(left: 10),
                         child: const Text(
                           "Lineal",
-                          style: TextStyle(fontFamily: "Montserrat",
+                          style: TextStyle(
+                              fontFamily: "Montserrat",
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 22),
@@ -242,78 +238,88 @@ class _MyHomePageState extends State<Lineal> {
                         height: 20,
                       ),
                       Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              color: const Color(0xff007DA4),
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(5),
-                                bottomLeft: Radius.circular(5),
-                              )),
-                          child: const Text(
-                            "Formato:",
-                            style: TextStyle(fontFamily: "Montserrat",color: Colors.white, fontSize: 16),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                                color: const Color(0xff007DA4),
+                                border: Border.all(
+                                    color: const Color(0xff007DA4), width: 2),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(5),
+                                  bottomLeft: Radius.circular(5),
+                                )),
+                            child: const Text(
+                              "Formato:",
+                              style: TextStyle(
+                                  fontFamily: "Montserrat",
+                                  color: Colors.white,
+                                  fontSize: 16),
+                            ),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(5),
-                                bottomRight: Radius.circular(5),
-                              )),
-                          child: Text(
-                            formato,
-                            style: const TextStyle(fontFamily: "Montserrat",
-                                color: Colors.black, fontSize: 16),
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: const Color(0xff007DA4), width: 2),
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(5),
+                                  bottomRight: Radius.circular(5),
+                                )),
+                            child: Text(
+                              formato,
+                              style: const TextStyle(
+                                  fontFamily: "Montserrat",
+                                  color: Colors.black,
+                                  fontSize: 16),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      height: 20,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              color: const Color(0xff007DA4),
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(5),
-                                bottomLeft: Radius.circular(5),
-                              )),
-                          child: const Text(
-                            "Tienda:",
-                            style: TextStyle(fontFamily: "Montserrat",color: Colors.white, fontSize: 16),
+                        ],
+                      ),
+                      Container(
+                        height: 20,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                                color: const Color(0xff007DA4),
+                                border: Border.all(
+                                    color: const Color(0xff007DA4), width: 2),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(5),
+                                  bottomLeft: Radius.circular(5),
+                                )),
+                            child: const Text(
+                              "Tienda:",
+                              style: TextStyle(
+                                  fontFamily: "Montserrat",
+                                  color: Colors.white,
+                                  fontSize: 16),
+                            ),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(5),
-                                bottomRight: Radius.circular(5),
-                              )),
-                          child: Text(
-                            tienda,
-                            style: const TextStyle(fontFamily: "Montserrat",
-                                color: Colors.black, fontSize: 16),
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: const Color(0xff007DA4), width: 2),
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(5),
+                                  bottomRight: Radius.circular(5),
+                                )),
+                            child: Text(
+                              tienda,
+                              style: const TextStyle(
+                                  fontFamily: "Montserrat",
+                                  color: Colors.black,
+                                  fontSize: 16),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                       Container(
                         height: 20,
                       ),
@@ -330,7 +336,10 @@ class _MyHomePageState extends State<Lineal> {
                             child: Center(
                               child: Text(
                                 "Objetivo:",
-                                style: TextStyle(fontFamily: "Montserrat",color: Colors.black, fontSize: 16),
+                                style: TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.black,
+                                    fontSize: 16),
                               ),
                             ),
                           ),
@@ -338,9 +347,11 @@ class _MyHomePageState extends State<Lineal> {
                             child: Center(
                               child: Text(
                                 objetivo,
-                                style: const TextStyle(fontFamily: "Montserrat",
-                                  fontWeight: FontWeight.bold,
-                                    color: Colors.black, fontSize: 16),
+                                style: const TextStyle(
+                                    fontFamily: "Montserrat",
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                    fontSize: 16),
                               ),
                             ),
                           ),
@@ -356,7 +367,10 @@ class _MyHomePageState extends State<Lineal> {
                             child: Center(
                               child: Text(
                                 "Ejecutado:",
-                                style: TextStyle(fontFamily: "Montserrat",color: Colors.black, fontSize: 16),
+                                style: TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.black,
+                                    fontSize: 16),
                               ),
                             ),
                           ),
@@ -364,9 +378,11 @@ class _MyHomePageState extends State<Lineal> {
                             child: Center(
                               child: Text(
                                 ejecutado,
-                                style: const TextStyle(fontFamily: "Montserrat",
-                                  fontWeight: FontWeight.bold,
-                                    color: Colors.black, fontSize: 16),
+                                style: const TextStyle(
+                                    fontFamily: "Montserrat",
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                    fontSize: 16),
                               ),
                             ),
                           ),
@@ -382,7 +398,10 @@ class _MyHomePageState extends State<Lineal> {
                             child: Center(
                               child: Text(
                                 "Avance:",
-                                style: TextStyle(fontFamily: "Montserrat",color: Colors.black, fontSize: 16),
+                                style: TextStyle(
+                                    fontFamily: "Montserrat",
+                                    color: Colors.black,
+                                    fontSize: 16),
                               ),
                             ),
                           ),
@@ -390,9 +409,11 @@ class _MyHomePageState extends State<Lineal> {
                             child: Center(
                               child: Text(
                                 "$avance%",
-                                style: const TextStyle(fontFamily: "Montserrat",
-                                  fontWeight: FontWeight.bold,
-                                    color: Colors.black, fontSize: 16),
+                                style: const TextStyle(
+                                    fontFamily: "Montserrat",
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                    fontSize: 16),
                               ),
                             ),
                           ),
@@ -425,7 +446,8 @@ class _MyHomePageState extends State<Lineal> {
               case 0:
                 // only scroll to top when current index is selected.
                 if (_selectedIndex == index) {
-                  Navigator.of(context).pushAndRemoveUntil(HomeScreen.route(""), (route) => false);
+                  Navigator.of(context).pushAndRemoveUntil(
+                      HomeScreen.route(""), (route) => false);
                 }
                 break;
               case 1:

@@ -17,6 +17,7 @@ import 'package:search_choices/search_choices.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
+import 'package:vicomv2/widgets/app_drawer.dart';
 
 import 'loginScreen.dart';
 
@@ -45,11 +46,11 @@ class _MyHomePageState extends State<Tareas> {
   String userCeys = "";
   String nombreUsuario = "";
 
-  int tareas_objetivo =  0;
+  int tareas_objetivo = 0;
   var tareas_pendientes;
   var tareas_realizadas;
   var tareas_pendientesList = [];
-  var tareas_realizadasList= [];
+  var tareas_realizadasList = [];
 
   int _selectedIndex = 0;
 
@@ -57,20 +58,45 @@ class _MyHomePageState extends State<Tareas> {
 
   RefreshController _refreshController =
       RefreshController(initialRefresh: false);
+  Map<String, bool> availableModules = {};
+  bool loadingModules = true;
 
   @override
   void initState() {
     super.initState();
     loginState();
+    loadModules();
     getData();
   }
 
-  void _onRefresh() async{
-      // monitor network fetch
-      getData();
-      // if failed,use refreshFailed()
-      _refreshController.refreshCompleted();
-    }
+  Future<void> loadModules() async {
+    final modules = await getStoredModules();
+
+    setState(() {
+      availableModules = modules;
+      loadingModules = false;
+    });
+
+    print('Módulos cargados en Home: $availableModules');
+  }
+
+  Future<Map<String, bool>> getStoredModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('available_modules');
+
+    if (raw == null) return {};
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+    return decoded.map((key, value) => MapEntry(key, value == true));
+  }
+
+  void _onRefresh() async {
+    // monitor network fetch
+    getData();
+    // if failed,use refreshFailed()
+    _refreshController.refreshCompleted();
+  }
 
   void loginState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -160,7 +186,6 @@ class _MyHomePageState extends State<Tareas> {
     });
   }
 
-
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
@@ -168,444 +193,374 @@ class _MyHomePageState extends State<Tareas> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: Scaffold(
-      key: _scaffoldKey,
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-                decoration: const BoxDecoration(
-                  color: Color(0xff060024),
-                ),
-                child: Center(
-                  child: Image.asset(
-                    "assets/logo_app.png",
-                    scale: 6,
-                  ),
-                )),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Inicio'),
-              onTap: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                    HomeScreen.route(""), (route) => false);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.store),
-              title: const Text('Tiendas'),
-              onTap: () {
-                logout();
-              },
-            ),
-            ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Puntos de control'),
-                onTap: () {
-                  Navigator.of(context).push(PuntosControl.route(""));
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.view_module),
-              title: const Text('Exhibiciones'),
-              onTap: () {
-                Navigator.of(context).push(Exhibiciones.route(""));
-              },
-            ),
-            ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Frentes'),
-                onTap: () {
-                  Navigator.of(context).push(Frentes.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Asignación de tareas'),
-                onTap: () {
-                  Navigator.of(context).push(AsignacionTareas.route(""));
-                },
-              ),
-            Builder(builder: (context) {
-              return ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Tareas'),
-                onTap: () {
-                  Scaffold.of(context).closeDrawer();
-                },
-              );
-            }),
-            ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('BI'),
-                onTap: () {
-                  Navigator.of(context).push(BiScreen.route(""));
-                },
-              ),
-          ],
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        key: _scaffoldKey,
+        drawer: AppDrawer(
+          onLogout: logout,
+          availableModules: availableModules,
         ),
-      ),
-      body: SmartRefresher(
-        header: const WaterDropMaterialHeader(
+        body: SmartRefresher(
+          header: const WaterDropMaterialHeader(
             color: Color.fromRGBO(6, 0, 36, 1),
             backgroundColor: Color(0xff007DA4),
           ),
           onRefresh: _onRefresh,
           controller: _refreshController,
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
                 minHeight: MediaQuery.of(context).size.height,
               ),
-            child: Column(
-              children: <Widget>[
-                Container(
-                  color: const Color(0xff060024),
-                  padding: const EdgeInsets.only(
-                      top: 30, left: 20, right: 20, bottom: 30),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      Builder(builder: (context) {
-                        return GestureDetector(
-                          onTap: () {
-                            Scaffold.of(context).openDrawer();
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    color: const Color(0xff060024),
+                    padding: const EdgeInsets.only(
+                        top: 30, left: 20, right: 20, bottom: 30),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () {
+                            Navigator.pop(context);
                           },
-                          child: Image.asset(
-                            "assets/logo_modulo.png",
-                            scale: 5,
+                        ),
+                        Builder(builder: (context) {
+                          return GestureDetector(
+                            onTap: () {
+                              Scaffold.of(context).openDrawer();
+                            },
+                            child: Image.asset(
+                              "assets/logo_modulo.png",
+                              scale: 5,
+                            ),
+                          );
+                        }),
+                        Container(
+                          margin: const EdgeInsets.only(left: 10),
+                          child: const Text(
+                            "Tareas",
+                            style: TextStyle(
+                                fontFamily: "Montserrat",
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22),
                           ),
-                        );
-                      }),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: const Text(
-                          "Tareas",
-                          style: TextStyle(
-                              fontFamily: "Montserrat",
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Container(
-                  margin: const EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 20,
-                      ),
-                      Text(
-                        'Tareas asignadas en el mes: ${tareas_objetivo.toString()}',
-                        style:
-                            const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
-                      ),
-                      // const SizedBox(height: 10),
-                      // Text(
-                      //   tareas_objetivo.toString(),
-                      //   style:
-                      //       TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      // ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Tareas realizadas: ${tareas_realizadasList.length.toString()}',
-                        style:
-                            const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.all(10),
-                        child: ListView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: tareas_realizadas == null
-                              ? 0
-                              : tareas_realizadas.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            DateTime fechaFl = DateTime.parse(
-                                    tareas_realizadas[index]['fecha'])
-                                .toLocal();
-                            DateTime nuevaFechaFl =
-                                fechaFl.add(const Duration(hours: -2));
-                            String fechasctring =
-                                DateFormat('dd-MM-yyyy\nhh:mm')
-                                    .format(nuevaFechaFl);
+                  Container(
+                    margin: const EdgeInsets.all(10),
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 20,
+                        ),
+                        Text(
+                          'Tareas asignadas en el mes: ${tareas_objetivo.toString()}',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.normal),
+                        ),
+                        // const SizedBox(height: 10),
+                        // Text(
+                        //   tareas_objetivo.toString(),
+                        //   style:
+                        //       TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        // ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Tareas realizadas: ${tareas_realizadasList.length.toString()}',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.normal),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.all(10),
+                          child: ListView.builder(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: tareas_realizadas == null
+                                ? 0
+                                : tareas_realizadas.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              DateTime fechaFl = DateTime.parse(
+                                      tareas_realizadas[index]['fecha'])
+                                  .toLocal();
+                              DateTime nuevaFechaFl =
+                                  fechaFl.add(const Duration(hours: -2));
+                              String fechasctring =
+                                  DateFormat('dd-MM-yyyy\nhh:mm')
+                                      .format(nuevaFechaFl);
 
-                            DateTime fechaF2 = DateTime.parse(
-                                    tareas_realizadas[index]['fecha_retro'])
-                                .toLocal();
-                            DateTime nuevaFechaF2 =
-                                fechaF2.add(const Duration(hours: -2));
-                            String fechasctring2 =
-                                DateFormat('dd-MM-yyyy\nhh:mm')
-                                    .format(nuevaFechaF2);
-                    
-                            return SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                verticalDirection: VerticalDirection.up,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => Dialog(
-                                          child: PhotoView(
-                                            imageProvider: NetworkImage(
-                                              "http://72.167.33.202" +
-                                                  tareas_realizadas[index]
-                                                      ['imgF'],
+                              DateTime fechaF2 = DateTime.parse(
+                                      tareas_realizadas[index]['fecha_retro'])
+                                  .toLocal();
+                              DateTime nuevaFechaF2 =
+                                  fechaF2.add(const Duration(hours: -2));
+                              String fechasctring2 =
+                                  DateFormat('dd-MM-yyyy\nhh:mm')
+                                      .format(nuevaFechaF2);
+
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  verticalDirection: VerticalDirection.up,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            child: PhotoView(
+                                              imageProvider: NetworkImage(
+                                                "http://72.167.33.202" +
+                                                    tareas_realizadas[index]
+                                                        ['imgF'],
+                                              ),
                                             ),
                                           ),
+                                        );
+                                      },
+                                      child: Image.network(
+                                        "http://72.167.33.202" +
+                                            tareas_realizadas[index]['imgF'],
+                                        width: 40,
+                                        height: 60,
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: const EdgeInsets.all(10),
+                                      child: Text(
+                                        fechasctring,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
                                         ),
-                                      );
-                                    },
-                                    child: Image.network(
-                                      "http://72.167.33.202" +
-                                          tareas_realizadas[index]['imgF'],
-                                      width: 40,
-                                      height: 60,
-                                    ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      fechasctring,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
                                       ),
                                     ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      tareas_realizadas[index]
-                                          ['opcion'],
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
+                                    Container(
+                                      margin: const EdgeInsets.all(10),
+                                      child: Text(
+                                        tareas_realizadas[index]['opcion'],
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      tareas_realizadas[index]['comentario'],
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
+                                    Container(
+                                      margin: const EdgeInsets.all(10),
+                                      child: Text(
+                                        tareas_realizadas[index]['comentario'],
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      fechasctring2,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
+                                    Container(
+                                      margin: const EdgeInsets.all(10),
+                                      child: Text(
+                                        fechasctring2,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      tareas_realizadas[index]['comentario_retro'],
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
+                                    Container(
+                                      margin: const EdgeInsets.all(10),
+                                      child: Text(
+                                        tareas_realizadas[index]
+                                            ['comentario_retro'],
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => Dialog(
-                                          child: PhotoView(
-                                            imageProvider: NetworkImage(
-                                              "http://72.167.33.202" +
-                                                  tareas_realizadas[index]
-                                                      ['imgF_retro'],
+                                    GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            child: PhotoView(
+                                              imageProvider: NetworkImage(
+                                                "http://72.167.33.202" +
+                                                    tareas_realizadas[index]
+                                                        ['imgF_retro'],
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                    child: Image.network(
-                                      "http://72.167.33.202" +
-                                          tareas_realizadas[index]['imgF_retro'],
-                                      width: 40,
-                                      height: 60,
+                                        );
+                                      },
+                                      child: Image.network(
+                                        "http://72.167.33.202" +
+                                            tareas_realizadas[index]
+                                                ['imgF_retro'],
+                                        width: 40,
+                                        height: 60,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Tareas pendientes: ${tareas_pendientesList.length.toString()}',
-                        style:
-                            const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.all(10),
-                        child: ListView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: tareas_pendientes == null
-                              ? 0
-                              : tareas_pendientes.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            DateTime fechaFl = DateTime.parse(
-                                    tareas_pendientes[index]['fecha'])
-                                .toLocal();
-                            DateTime nuevaFechaF2 =
-                                fechaFl.add(const Duration(hours: -1));
-                            String fechasctring =
-                                DateFormat('dd-MM-yyyy')
-                                    .format(nuevaFechaF2);
-                    
-                            return SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                verticalDirection: VerticalDirection.up,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => Dialog(
-                                          child: PhotoView(
-                                            imageProvider: NetworkImage(
-                                              "http://72.167.33.202" +
-                                                  tareas_pendientes[index]
-                                                      ['imgF'],
+                        const SizedBox(height: 20),
+                        Text(
+                          'Tareas pendientes: ${tareas_pendientesList.length.toString()}',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.normal),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.all(10),
+                          child: ListView.builder(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: tareas_pendientes == null
+                                ? 0
+                                : tareas_pendientes.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              DateTime fechaFl = DateTime.parse(
+                                      tareas_pendientes[index]['fecha'])
+                                  .toLocal();
+                              DateTime nuevaFechaF2 =
+                                  fechaFl.add(const Duration(hours: -1));
+                              String fechasctring =
+                                  DateFormat('dd-MM-yyyy').format(nuevaFechaF2);
+
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  verticalDirection: VerticalDirection.up,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            child: PhotoView(
+                                              imageProvider: NetworkImage(
+                                                "http://72.167.33.202" +
+                                                    tareas_pendientes[index]
+                                                        ['imgF'],
+                                              ),
                                             ),
                                           ),
+                                        );
+                                      },
+                                      child: Image.network(
+                                        "http://72.167.33.202" +
+                                            tareas_pendientes[index]['imgF'],
+                                        width: 40,
+                                        height: 60,
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: const EdgeInsets.all(10),
+                                      child: Text(
+                                        fechasctring,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
                                         ),
-                                      );
-                                    },
-                                    child: Image.network(
-                                      "http://72.167.33.202" +
-                                          tareas_pendientes[index]['imgF'],
-                                      width: 40,
-                                      height: 60,
-                                    ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      fechasctring,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
                                       ),
                                     ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      tareas_pendientes[index]
-                                          ['opcion'],
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
+                                    Container(
+                                      margin: const EdgeInsets.all(10),
+                                      child: Text(
+                                        tareas_pendientes[index]['opcion'],
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      tareas_pendientes[index]['comentario'],
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
+                                    Container(
+                                      margin: const EdgeInsets.all(10),
+                                      child: Text(
+                                        tareas_pendientes[index]['comentario'],
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                  ),
-                )
-              ],
+                        const SizedBox(height: 10),
+                      ],
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: const Color(0xff060024),
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.open_in_new_rounded),
+              label: 'Tiendas',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.grey,
+          onTap: (int index) {
+            switch (index) {
+              case 0:
+                // only scroll to top when current index is selected.
+                if (_selectedIndex == index) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                      HomeScreen.route(""), (route) => false);
+                }
+                break;
+              case 1:
+                // showModal(context);
+                logout();
+            }
+            setState(
+              () {
+                _selectedIndex = index;
+              },
+            );
+          },
+        ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xff060024),
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.open_in_new_rounded),
-            label: 'Tiendas',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey,
-        onTap: (int index) {
-          switch (index) {
-            case 0:
-              // only scroll to top when current index is selected.
-              if (_selectedIndex == index) {
-                Navigator.of(context).pushAndRemoveUntil(
-                    HomeScreen.route(""), (route) => false);
-              }
-              break;
-            case 1:
-              // showModal(context);
-              logout();
-          }
-          setState(
-            () {
-              _selectedIndex = index;
-            },
-          );
-        },
-      ),
-    ),
-  );
-}
+    );
+  }
 
   void showModal(BuildContext context) {
     showDialog(

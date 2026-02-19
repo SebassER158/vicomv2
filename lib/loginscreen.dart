@@ -9,6 +9,7 @@ import 'package:search_choices/search_choices.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:vicomv2/providers/modules_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -53,6 +54,77 @@ class _LoginScreenState extends State<LoginScreen> {
     usuarioState();
   }
 
+  // void modulosDisponibles() async {
+  //   logindata = await SharedPreferences.getInstance();
+  //   try {
+  //         final response = await Api().getAvailableModules(logindata.getString('cuenta') ?? "");
+
+  //         if (response.statusCode == 200) {
+
+  //           print("Entro a ok en modulos disponibles");
+  //           final data = jsonDecode(response.body);
+
+  //           if (data['success'] == true && data['modules'] != null) {
+  //             final modules = Map<String, bool>.from(data['modules']);
+
+  //             if (mounted) {
+  //               context.read<ModulesProvider>().setModules(modules);
+  //             }
+  //           }
+  //         }
+  //       } catch (e) {
+  //         print('Error cargando módulos: $e');
+  //       }
+  // }
+
+  // Future<void> modulosDisponibles() async {
+  //   logindata = await SharedPreferences.getInstance();
+
+  //   try {
+  //     final response =
+  //         await Api().getAvailableModules(logindata.getString('cuenta') ?? "");
+
+  //     if (response.statusCode == 200) {
+  //       print("Entro en modulos disponibes");
+  //       final data = jsonDecode(response.body);
+
+  //       if (data['success'] == true && data['modules'] != null) {
+  //         final modules = Map<String, bool>.from(data['modules']);
+
+  //         if (mounted) {
+  //           await context.read<ModulesProvider>().setModules(modules);
+  //         }
+  //       }
+  //     }
+  //   } catch (e) {
+  //     print('Error cargando módulos: $e');
+  //   }
+  // }
+
+  Future<void> modulosDisponibles() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    try {
+      final response =
+          await Api().getAvailableModules(prefs.getString('cuenta') ?? "");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['success'] == true && data['modules'] != null) {
+          await prefs.setString(
+            'available_modules',
+            jsonEncode(data['modules']),
+          );
+
+          print('Módulos guardados: ${data['modules']}');
+        }
+      }
+    } catch (e) {
+      print('Error cargando módulos: $e');
+    }
+  }
+
   void loginState() async {
     logindata = await SharedPreferences.getInstance();
     setState(() {
@@ -70,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void usuarioState() async {
     logindata = await SharedPreferences.getInstance();
     try {
-      var response = await Api().getTiendas(cuenta, "tiendas");
+      var response = await Api().getValoresTabla(cuenta, "tiendas");
       if (response.statusCode == 200) {
         print("Entro en response 200");
         String respuesta = response.body;
@@ -84,6 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       print("Error de conexión: $e");
     }
+    await modulosDisponibles();
 
     setState(() {
       // id_usuario = (logindata.getInt('id_usuario') ?? 0);
@@ -115,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await prefs.setBool('logueado', true);
     //version nueva con perfiles general
     // String valor = "$cuenta.$nip";
-    // var url = "http://72.167.33.202:2020/getValuesTableByNip/$cuenta/usuarios/$nip";
+    // var url = "${Api().server}/getValuesTableByNip/$cuenta/usuarios/$nip";
     // print(url);
     // http.Response response = await http.get(Uri.parse(url));
 
@@ -435,10 +508,12 @@ class _LoginScreenState extends State<LoginScreen> {
       double rangoMaximo = 300.0;
       tiendas2.forEach((element) {
         // ignore: unnecessary_null_comparison
-        if(element['coordenadax'] != null && element['coordenaday'] != null){
+        if (element['coordenadax'] != null && element['coordenaday'] != null) {
           print(" aqui lat es -${element['coordenadax'].toString()}-");
-          double latitudTienda = double.parse(element['coordenadax'].toString());
-          double longitudTienda = double.parse(element['coordenaday'].toString());
+          double latitudTienda =
+              double.parse(element['coordenadax'].toString());
+          double longitudTienda =
+              double.parse(element['coordenaday'].toString());
 
           double distancia = calcularDistancia(position.latitude,
               position.longitude, latitudTienda, longitudTienda);

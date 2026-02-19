@@ -11,6 +11,7 @@ import 'package:vicomv2/tareas.dart';
 import 'package:intl/intl.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
+import 'package:vicomv2/widgets/app_drawer.dart';
 
 import 'loginScreen.dart';
 
@@ -63,19 +64,45 @@ class _MyHomePageState extends State<Exhibiciones> {
   RefreshController _refreshController =
       RefreshController(initialRefresh: false);
 
+  Map<String, bool> availableModules = {};
+  bool loadingModules = true;
+
   @override
   void initState() {
     super.initState();
     loginState();
+    loadModules();
     getData();
   }
 
-  void _onRefresh() async{
-      // monitor network fetch
-      getData();
-      // if failed,use refreshFailed()
-      _refreshController.refreshCompleted();
-    }
+  Future<void> loadModules() async {
+    final modules = await getStoredModules();
+
+    setState(() {
+      availableModules = modules;
+      loadingModules = false;
+    });
+
+    print('Módulos cargados en Home: $availableModules');
+  }
+
+  Future<Map<String, bool>> getStoredModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('available_modules');
+
+    if (raw == null) return {};
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+    return decoded.map((key, value) => MapEntry(key, value == true));
+  }
+
+  void _onRefresh() async {
+    // monitor network fetch
+    getData();
+    // if failed,use refreshFailed()
+    _refreshController.refreshCompleted();
+  }
 
   void loginState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -88,6 +115,9 @@ class _MyHomePageState extends State<Exhibiciones> {
   }
 
   void getData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    idTienda = (prefs.getInt('idTienda') ?? 0);
+    cuenta = (prefs.getString('cuenta') ?? "");
 
     try {
       var response2 = await Api().getObjetivosEx(cuenta, idTienda);
@@ -197,81 +227,9 @@ class _MyHomePageState extends State<Exhibiciones> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         key: _scaffoldKey,
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              DrawerHeader(
-                  decoration: const BoxDecoration(
-                    color: Color(0xff060024),
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      "assets/logo_app.png",
-                      scale: 6,
-                    ),
-                  )),
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Inicio'),
-                onTap: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                      HomeScreen.route(""), (route) => false);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.store),
-                title: const Text('Tiendas'),
-                onTap: () {
-                  logout();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Puntos de control'),
-                onTap: () {
-                  Navigator.of(context).push(PuntosControl.route(""));
-                },
-              ),
-              Builder(builder: (context) {
-                return ListTile(
-                  leading: const Icon(Icons.view_module),
-                  title: const Text('Exhibiciones'),
-                  onTap: () {
-                    Scaffold.of(context).closeDrawer();
-                  },
-                );
-              }),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Frentes'),
-                onTap: () {
-                  Navigator.of(context).push(Frentes.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Asignación de tareas'),
-                onTap: () {
-                  Navigator.of(context).push(AsignacionTareas.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Tareas'),
-                onTap: () {
-                  Navigator.of(context).push(Tareas.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('BI'),
-                onTap: () {
-                  Navigator.of(context).push(BiScreen.route(""));
-                },
-              ),
-            ],
-          ),
+        drawer: AppDrawer(
+          onLogout: logout,
+          availableModules: availableModules,
         ),
         body: SmartRefresher(
           header: const WaterDropMaterialHeader(
@@ -606,221 +564,234 @@ class _MyHomePageState extends State<Exhibiciones> {
                             ),
                           ],
                         ),
-                      //   Container(
-                      //   margin: EdgeInsets.all(10),
-                      //   child: ListView.builder(
-                      //     physics: NeverScrollableScrollPhysics(),
-                      //     shrinkWrap: true,
-                      //     itemCount: exhibicionesList == null
-                      //         ? 0
-                      //         : exhibicionesList.length,
-                      //     itemBuilder: (BuildContext context, int index) {
-                      //       DateTime fechaFl =
-                      //           DateTime.parse(exhibicionesList[index]['fecha'])
-                      //               .toLocal();
-                      //       DateTime nuevaFechaFl =
-                      //           fechaFl.add(const Duration(hours: -1));
-                      //       String fechasctring = DateFormat('dd-MM-yyyy\nHH:mm:ss')
-                      //           .format(nuevaFechaFl);
-                      //       return SingleChildScrollView(
-                      //         scrollDirection: Axis.vertical,
-                      //         child: Column(
-                      //           children: List.generate(exhibicionesList.length,
-                      //               (index) {
-                      //             return SingleChildScrollView(
-                      //               scrollDirection: Axis.horizontal,
-                      //               child: Row(
-                      //                 mainAxisAlignment:
-                      //                     MainAxisAlignment.spaceAround,
-                      //                 verticalDirection: VerticalDirection.up,
-                      //                 children: [
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       fechasctring,
-                      //                       textAlign: TextAlign.center,
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                   GestureDetector(
-                      //                     onTap: () {
-                      //                       showDialog(
-                      //                         context: context,
-                      //                         builder: (_) => Dialog(
-                      //                           child: PhotoView(
-                      //                             imageProvider: NetworkImage(
-                      //                               "http://72.167.33.202" +
-                      //                                   exhibicionesList[index]
-                      //                                       ['fotoF'],
-                      //                             ),
-                      //                           ),
-                      //                         ),
-                      //                       );
-                      //                     },
-                      //                     child: Image.network(
-                      //                       "http://72.167.33.202" +
-                      //                           exhibicionesList[index]['fotoF'],
-                      //                       width: 40,
-                      //                       height: 60,
-                      //                     ),
-                      //                   ),
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       exhibicionesList[index]['departamento'],
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       exhibicionesList[index]['marca'],
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       exhibicionesList[index]['tipoexhibicion'],
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       exhibicionesList[index]['permanencia'] ?? "",
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                 ],
-                      //               ),
-                      //             );
-                      //           }),
-                      //         ),
-                      //       );
-                      //     },
-                      //   ),
-                      // ),
-                        
-                      Container(
-              margin: EdgeInsets.all(10),
-              child: ListView.builder(
-                physics: NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemCount: exhibicionesList == null ? 0 : exhibicionesList.length,
-                itemBuilder: (BuildContext context, int index) {
-                  DateTime fechaFl = DateTime.parse(exhibicionesList[index]['fecha']).toLocal();
-                  DateTime nuevaFechaFl = fechaFl.add(const Duration(hours: -1));
-                  String fechasctring = DateFormat('dd-MM-yyyy\nHH:mm:ss').format(nuevaFechaFl);
-                        
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        verticalDirection: VerticalDirection.up,
-                        children: [
-              Container(
-                margin: EdgeInsets.all(10),
-                child: Text(
-                  fechasctring,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: "Montserrat",
-                    color: Colors.black,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => Dialog(
-                      child: PhotoView(
-                        imageProvider: NetworkImage(
-                          "http://72.167.33.202" + exhibicionesList[index]['fotoF'],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                child: Image.network(
-                  "http://72.167.33.202" + exhibicionesList[index]['fotoF'],
-                  width: 40,
-                  height: 60,
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.all(10),
-                child: Text(
-                  exhibicionesList[index]['departamento'],
-                  style: const TextStyle(
-                    fontFamily: "Montserrat",
-                    color: Colors.black,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.all(10),
-                child: Text(
-                  exhibicionesList[index]['marca'],
-                  style: const TextStyle(
-                    fontFamily: "Montserrat",
-                    color: Colors.black,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.all(10),
-                child: Text(
-                  exhibicionesList[index]['tipoexhibicion'],
-                  style: const TextStyle(
-                    fontFamily: "Montserrat",
-                    color: Colors.black,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.all(10),
-                child: Text(
-                  exhibicionesList[index]['permanencia'] ?? "",
-                  style: const TextStyle(
-                    fontFamily: "Montserrat",
-                    color: Colors.black,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-                        ],
-                    ),
-                  );
-                },
-              ),
+                        //   Container(
+                        //   margin: EdgeInsets.all(10),
+                        //   child: ListView.builder(
+                        //     physics: NeverScrollableScrollPhysics(),
+                        //     shrinkWrap: true,
+                        //     itemCount: exhibicionesList == null
+                        //         ? 0
+                        //         : exhibicionesList.length,
+                        //     itemBuilder: (BuildContext context, int index) {
+                        //       DateTime fechaFl =
+                        //           DateTime.parse(exhibicionesList[index]['fecha'])
+                        //               .toLocal();
+                        //       DateTime nuevaFechaFl =
+                        //           fechaFl.add(const Duration(hours: -1));
+                        //       String fechasctring = DateFormat('dd-MM-yyyy\nHH:mm:ss')
+                        //           .format(nuevaFechaFl);
+                        //       return SingleChildScrollView(
+                        //         scrollDirection: Axis.vertical,
+                        //         child: Column(
+                        //           children: List.generate(exhibicionesList.length,
+                        //               (index) {
+                        //             return SingleChildScrollView(
+                        //               scrollDirection: Axis.horizontal,
+                        //               child: Row(
+                        //                 mainAxisAlignment:
+                        //                     MainAxisAlignment.spaceAround,
+                        //                 verticalDirection: VerticalDirection.up,
+                        //                 children: [
+                        //                   Container(
+                        //                     margin: EdgeInsets.all(10),
+                        //                     child: Text(
+                        //                       fechasctring,
+                        //                       textAlign: TextAlign.center,
+                        //                       style: const TextStyle(
+                        //                         fontFamily: "Montserrat",
+                        //                         color: Colors.black,
+                        //                         fontSize: 16,
+                        //                       ),
+                        //                     ),
+                        //                   ),
+                        //                   GestureDetector(
+                        //                     onTap: () {
+                        //                       showDialog(
+                        //                         context: context,
+                        //                         builder: (_) => Dialog(
+                        //                           child: PhotoView(
+                        //                             imageProvider: NetworkImage(
+                        //                               "http://72.167.33.202" +
+                        //                                   exhibicionesList[index]
+                        //                                       ['fotoF'],
+                        //                             ),
+                        //                           ),
+                        //                         ),
+                        //                       );
+                        //                     },
+                        //                     child: Image.network(
+                        //                       "http://72.167.33.202" +
+                        //                           exhibicionesList[index]['fotoF'],
+                        //                       width: 40,
+                        //                       height: 60,
+                        //                     ),
+                        //                   ),
+                        //                   Container(
+                        //                     margin: EdgeInsets.all(10),
+                        //                     child: Text(
+                        //                       exhibicionesList[index]['departamento'],
+                        //                       style: const TextStyle(
+                        //                         fontFamily: "Montserrat",
+                        //                         color: Colors.black,
+                        //                         fontSize: 16,
+                        //                       ),
+                        //                     ),
+                        //                   ),
+                        //                   Container(
+                        //                     margin: EdgeInsets.all(10),
+                        //                     child: Text(
+                        //                       exhibicionesList[index]['marca'],
+                        //                       style: const TextStyle(
+                        //                         fontFamily: "Montserrat",
+                        //                         color: Colors.black,
+                        //                         fontSize: 16,
+                        //                       ),
+                        //                     ),
+                        //                   ),
+                        //                   Container(
+                        //                     margin: EdgeInsets.all(10),
+                        //                     child: Text(
+                        //                       exhibicionesList[index]['tipoexhibicion'],
+                        //                       style: const TextStyle(
+                        //                         fontFamily: "Montserrat",
+                        //                         color: Colors.black,
+                        //                         fontSize: 16,
+                        //                       ),
+                        //                     ),
+                        //                   ),
+                        //                   Container(
+                        //                     margin: EdgeInsets.all(10),
+                        //                     child: Text(
+                        //                       exhibicionesList[index]['permanencia'] ?? "",
+                        //                       style: const TextStyle(
+                        //                         fontFamily: "Montserrat",
+                        //                         color: Colors.black,
+                        //                         fontSize: 16,
+                        //                       ),
+                        //                     ),
+                        //                   ),
+                        //                 ],
+                        //               ),
+                        //             );
+                        //           }),
+                        //         ),
+                        //       );
+                        //     },
+                        //   ),
+                        // ),
+
+                        Container(
+                          margin: EdgeInsets.all(10),
+                          child: ListView.builder(
+                            physics: NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: exhibicionesList == null
+                                ? 0
+                                : exhibicionesList.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              DateTime fechaFl = DateTime.parse(
+                                      exhibicionesList[index]['fecha'])
+                                  .toLocal();
+                              DateTime nuevaFechaFl =
+                                  fechaFl.add(const Duration(hours: -1));
+                              String fechasctring =
+                                  DateFormat('dd-MM-yyyy\nHH:mm:ss')
+                                      .format(nuevaFechaFl);
+
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  verticalDirection: VerticalDirection.up,
+                                  children: [
+                                    Container(
+                                      margin: EdgeInsets.all(10),
+                                      child: Text(
+                                        fechasctring,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            child: PhotoView(
+                                              imageProvider: NetworkImage(
+                                                "http://72.167.33.202" +
+                                                    exhibicionesList[index]
+                                                        ['fotoF'],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Image.network(
+                                        "http://72.167.33.202" +
+                                            exhibicionesList[index]['fotoF'],
+                                        width: 40,
+                                        height: 60,
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: EdgeInsets.all(10),
+                                      child: Text(
+                                        exhibicionesList[index]['departamento'],
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: EdgeInsets.all(10),
+                                      child: Text(
+                                        exhibicionesList[index]['marca'],
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: EdgeInsets.all(10),
+                                      child: Text(
+                                        exhibicionesList[index]
+                                            ['tipoexhibicion'],
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: EdgeInsets.all(10),
+                                      child: Text(
+                                        exhibicionesList[index]
+                                                ['permanencia'] ??
+                                            "",
+                                        style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         )
-                        
                       ],
                     ),
                   ),

@@ -10,6 +10,7 @@ import 'package:vicomv2/biscreen.dart';
 import 'package:vicomv2/exhibiciones.dart';
 import 'package:vicomv2/frentes.dart';
 import 'package:vicomv2/iniciosesion.dart';
+import 'package:vicomv2/providers/modules_provider.dart';
 import 'package:vicomv2/puntoscontrol.dart';
 import 'package:vicomv2/tareas.dart';
 import 'package:photo_view/photo_view.dart';
@@ -17,6 +18,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
+import 'package:vicomv2/widgets/app_drawer.dart';
 
 import 'loginScreen.dart';
 
@@ -119,19 +121,56 @@ class _MyHomePageState extends State<HomeScreen> {
   RefreshController _refreshController =
       RefreshController(initialRefresh: false);
 
+  Map<String, bool> availableModules = {};
+  bool loadingModules = true;
+
   @override
   void initState() {
     super.initState();
     loginState();
-    //getData();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      getData(); // Llamar a getData después de que el widget haya sido renderizado.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // final modulesProvider = context.read<ModulesProvider>();
+
+      // // Solo cargar si NO está inicializado
+      // if (!modulesProvider.initialized) {
+      //   _showLoadingDialog();
+
+      //   await modulesProvider.loadFromStorage();
+
+      //   if (mounted) {
+      //     Navigator.of(context, rootNavigator: true).pop(); // cerrar dialog
+      //   }
+      // }
+      await loadModules();
+      getData();
     });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Cargando módulos...',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _getDeviceInfo() async {
@@ -179,10 +218,37 @@ class _MyHomePageState extends State<HomeScreen> {
     // _getDeviceInfo();
   }
 
+  Future<void> loadModules() async {
+    final modules = await getStoredModules();
+
+    setState(() {
+      availableModules = modules;
+      loadingModules = false;
+    });
+
+    print('Módulos cargados en Home: $availableModules');
+  }
+
+  Future<Map<String, bool>> getStoredModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('available_modules');
+
+    if (raw == null) return {};
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+    return decoded.map((key, value) => MapEntry(key, value == true));
+  }
+
+  bool hasModule(String key) {
+    return availableModules[key] == true;
+  }
+
   void getData() async {
     showDialog(
       context: context,
       barrierDismissible: false,
+      useRootNavigator: true,
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -228,7 +294,7 @@ class _MyHomePageState extends State<HomeScreen> {
     }
 
     try {
-      var response = await Api().getTiendas(cuenta, "tiendas");
+      var response = await Api().getValoresTabla(cuenta, "tiendas");
       if (response.statusCode == 200) {
         print("Entro en response 200");
         String respuesta = response.body;
@@ -360,122 +426,136 @@ class _MyHomePageState extends State<HomeScreen> {
     } catch (e) {
       print("Error de conexión: $e");
     }
-
-    try {
-      var response6 = await Api().getCumplimientoVisita(cuenta, idTienda);
-      if (response6.statusCode == 200) {
-        datacv = response6.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            cumplimientoVisita = jsonDecode(datacv);
-            cumplimientoVisitaList = cumplimientoVisita ?? "[]";
-            cumplimiento_visita =
-                (cumplimientoVisitaList[0]['porcentaje_cumplimiento'] ?? 0)
-                    .toStringAsFixed(2);
-          });
+    if (hasModule('cumplimiento_visitas') == true) {
+      try {
+        var response6 = await Api().getCumplimientoVisita(cuenta, idTienda);
+        if (response6.statusCode == 200) {
+          datacv = response6.body; //store response as string
+          if (this.mounted) {
+            setState(() {
+              cumplimientoVisita = jsonDecode(datacv);
+              cumplimientoVisitaList = cumplimientoVisita ?? "[]";
+              cumplimiento_visita =
+                  (cumplimientoVisitaList[0]['porcentaje_cumplimiento'] ?? 0)
+                      .toStringAsFixed(2);
+            });
+          }
+        } else {
+          print(response6.statusCode);
         }
-      } else {
-        print(response6.statusCode);
+      } catch (e) {
+        print("Error de conexión: $e");
       }
-    } catch (e) {
-      print("Error de conexión: $e");
     }
 
-    try {
-      var response7 = await Api().getDatosPuntosControl(cuenta, idTienda);
-      if (response7.statusCode == 200) {
-        datadpc = response7.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            datosPuntosControl = jsonDecode(datadpc);
-            datosPuntosControlList = datosPuntosControl ?? "[]";
-            total_registros_control =
-                (datosPuntosControlList[0]['total_registros_control'] ?? 0)
-                    .toString();
-            total_registros_control_join =
-                (datosPuntosControlList[0]['total_registros_control_join'] ?? 0)
-                    .toString();
-            avance_porcentaje_dpc =
-                (datosPuntosControlList[0]['avance_porcentaje'] ?? 0)
-                    .toStringAsFixed(2);
-          });
+    if (hasModule('puntos_control') == true) {
+      try {
+        var response7 = await Api().getDatosPuntosControl(cuenta, idTienda);
+        if (response7.statusCode == 200) {
+          datadpc = response7.body; //store response as string
+          if (this.mounted) {
+            setState(() {
+              datosPuntosControl = jsonDecode(datadpc);
+              datosPuntosControlList = datosPuntosControl ?? "[]";
+              total_registros_control =
+                  (datosPuntosControlList[0]['total_registros_control'] ?? 0)
+                      .toString();
+              total_registros_control_join = (datosPuntosControlList[0]
+                          ['total_registros_control_join'] ??
+                      0)
+                  .toString();
+              avance_porcentaje_dpc =
+                  (datosPuntosControlList[0]['avance_porcentaje'] ?? 0)
+                      .toStringAsFixed(2);
+            });
+          }
+        } else {
+          print(response7.statusCode);
         }
-      } else {
-        print(response7.statusCode);
+      } catch (e) {
+        print("Error de conexión: $e");
       }
-    } catch (e) {
-      print("Error de conexión: $e");
     }
 
-    try {
-      var response8 = await Api().getDatosExhibicion(cuenta, idTienda);
-      if (response8.statusCode == 200) {
-        datade = response8.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            datosExhibicion = jsonDecode(datade);
-            datosExhibicionList = datosExhibicion ?? "[]";
-            total_objetivo_de =
-                (datosExhibicionList[0]['total_objetivo'] ?? 0).toString();
-            total_ejecutado_de =
-                (datosExhibicionList[0]['total_ejecutado'] ?? 0).toString();
-            avance_porcentaje_de =
-                (datosExhibicionList[0]['avance_porcentaje'] ?? 0)
-                    .toStringAsFixed(2);
-          });
+    if (hasModule('exhibiciones') == true) {
+      try {
+        var response8 = await Api().getDatosExhibicion(cuenta, idTienda);
+        if (response8.statusCode == 200) {
+          datade = response8.body; //store response as string
+          if (this.mounted) {
+            setState(() {
+              datosExhibicion = jsonDecode(datade);
+              datosExhibicionList = datosExhibicion ?? "[]";
+              total_objetivo_de =
+                  (datosExhibicionList[0]['total_objetivo'] ?? 0).toString();
+              total_ejecutado_de =
+                  (datosExhibicionList[0]['total_ejecutado'] ?? 0).toString();
+              avance_porcentaje_de =
+                  (datosExhibicionList[0]['avance_porcentaje'] ?? 0)
+                      .toStringAsFixed(2);
+            });
+          }
+        } else {
+          print(response8.statusCode);
         }
-      } else {
-        print(response8.statusCode);
+      } catch (e) {
+        print("Error de conexión: $e");
       }
-    } catch (e) {
-      print("Error de conexión: $e");
     }
 
-    try {
-      var response9 = await Api().getDatosLineal(cuenta, idTienda);
-      if (response9.statusCode == 200) {
-        datadl = response9.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            datosLineal = jsonDecode(datadl);
-            datosLinealList = datosLineal ?? "[]";
-            total_objetivo_dl =
-                (datosLinealList[0]['total_objetivo'] ?? 0).toString();
-            total_ejecutado_dl =
-                (datosLinealList[0]['total_ejecutado'] ?? 0).toString();
-            avance_porcentaje_dl =
-                (datosLinealList[0]['avance_porcentaje'] ?? 0)
-                    .toStringAsFixed(2);
-          });
+    if (hasModule('lineal') == true) {
+      try {
+        var response9 = await Api().getDatosLineal(cuenta, idTienda);
+        if (response9.statusCode == 200) {
+          datadl = response9.body; //store response as string
+          if (this.mounted) {
+            setState(() {
+              datosLineal = jsonDecode(datadl);
+              datosLinealList = datosLineal ?? "[]";
+              total_objetivo_dl =
+                  (datosLinealList[0]['total_objetivo'] ?? 0).toString();
+              total_ejecutado_dl =
+                  (datosLinealList[0]['total_ejecutado'] ?? 0).toString();
+              avance_porcentaje_dl =
+                  (datosLinealList[0]['avance_porcentaje'] ?? 0)
+                      .toStringAsFixed(2);
+            });
+          }
+        } else {
+          print(response9.statusCode);
         }
-      } else {
-        print(response9.statusCode);
+      } catch (e) {
+        print("Error de conexión: $e");
       }
-    } catch (e) {
-      print("Error de conexión: $e");
     }
 
-    try {
-      var response10 =
-          await Api().getDatosSo(cuenta, cadena, int.parse(numero));
-      if (response10.statusCode == 200) {
-        dataso = response10.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            datosSo = jsonDecode(dataso);
-            datosSoList = datosSo ?? "[]";
-            porcentaje_avance_so =
-                (datosSo[0]['porcentaje_avance'] ?? 0).toStringAsFixed(2);
-          });
+    if (hasModule('so') == true) {
+      try {
+        var response10 =
+            await Api().getDatosSo(cuenta, cadena, int.parse(numero));
+        if (response10.statusCode == 200) {
+          dataso = response10.body; //store response as string
+          if (this.mounted) {
+            setState(() {
+              datosSo = jsonDecode(dataso);
+              datosSoList = datosSo ?? "[]";
+              porcentaje_avance_so =
+                  (datosSo[0]['porcentaje_avance'] ?? 0).toStringAsFixed(2);
+            });
+          }
+        } else {
+          print(response10.statusCode);
         }
-      } else {
-        print(response10.statusCode);
+      } catch (e) {
+        print("Error de conexión: $e");
       }
-    } catch (e) {
-      print("Error de conexión: $e");
     }
 
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
+    if (mounted) {
+      // Cierra el diálogo asegurándote de usar el rootNavigator
+      Navigator.of(context, rootNavigator: true).pop();
+    }
   }
 
   Future setTienda(tiendaul) async {
@@ -525,12 +605,12 @@ class _MyHomePageState extends State<HomeScreen> {
     Navigator.of(context).pushReplacement(Iniciosesion.route());
   }
 
-  void _onRefresh() async{
-      // monitor network fetch
-      getData();
-      // if failed,use refreshFailed()
-      _refreshController.refreshCompleted();
-    }
+  void _onRefresh() async {
+    // monitor network fetch
+    getData();
+    // if failed,use refreshFailed()
+    _refreshController.refreshCompleted();
+  }
 
   @override
   void dispose() {
@@ -540,84 +620,27 @@ class _MyHomePageState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // final modules = context.watch<ModulesProvider>();
+
+    // print("Vamos a ver que trae modules en widget");
+    // print(availableModules);
+    // print(initialized);
+    // print(hasModule("SO"));
+
+    // // 1️⃣ Mientras carga persistencia
+    // if (!initialized) {
+    //   return const Scaffold(
+    //     body: Center(child: CircularProgressIndicator()),
+    //   );
+    // }
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         key: _scaffoldKey,
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              DrawerHeader(
-                  decoration: const BoxDecoration(
-                    color: Color(0xff060024),
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      "assets/logo_app.png",
-                      scale: 6,
-                    ),
-                  )),
-              Builder(builder: (context) {
-                return ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text('Inicio'),
-                  onTap: () {
-                    Scaffold.of(context).closeDrawer();
-                  },
-                );
-              }),
-              ListTile(
-                leading: const Icon(Icons.store),
-                title: const Text('Tiendas'),
-                onTap: () {
-                  logout();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Puntos de control'),
-                onTap: () {
-                  Navigator.of(context).push(PuntosControl.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Exhibiciones'),
-                onTap: () {
-                  Navigator.of(context).push(Exhibiciones.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Frentes'),
-                onTap: () {
-                  Navigator.of(context).push(Frentes.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Asignación de tareas'),
-                onTap: () {
-                  Navigator.of(context).push(AsignacionTareas.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Tareas'),
-                onTap: () {
-                  Navigator.of(context).push(Tareas.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('BI'),
-                onTap: () {
-                  Navigator.of(context).push(BiScreen.route(""));
-                },
-              ),
-            ],
-          ),
+        drawer: AppDrawer(
+          onLogout: logout,
+          availableModules: availableModules,
         ),
         body: SmartRefresher(
           header: const WaterDropMaterialHeader(
@@ -698,7 +721,7 @@ class _MyHomePageState extends State<HomeScreen> {
                       Center(
                         child: Column(
                           children: [
-                            Text("Geolocalización",
+                            const Text("Geolocalización",
                                 style: TextStyle(
                                   letterSpacing: 1,
                                   fontFamily: "Montserrat",
@@ -821,7 +844,8 @@ class _MyHomePageState extends State<HomeScreen> {
                                             border: Border.all(
                                                 color: const Color(0xff007DA4),
                                                 width: 2),
-                                            borderRadius: const BorderRadius.only(
+                                            borderRadius:
+                                                const BorderRadius.only(
                                               topRight: Radius.circular(5),
                                               bottomRight: Radius.circular(5),
                                             )),
@@ -872,7 +896,8 @@ class _MyHomePageState extends State<HomeScreen> {
                                             border: Border.all(
                                                 color: const Color(0xff007DA4),
                                                 width: 2),
-                                            borderRadius: const BorderRadius.only(
+                                            borderRadius:
+                                                const BorderRadius.only(
                                               topRight: Radius.circular(5),
                                               bottomRight: Radius.circular(5),
                                             )),
@@ -904,7 +929,8 @@ class _MyHomePageState extends State<HomeScreen> {
                                 decoration: BoxDecoration(
                                     color: const Color(0xff007DA4),
                                     border: Border.all(
-                                        color: const Color(0xff007DA4), width: 2),
+                                        color: const Color(0xff007DA4),
+                                        width: 2),
                                     borderRadius: const BorderRadius.only(
                                       topLeft: Radius.circular(5),
                                       topRight: Radius.circular(5),
@@ -921,7 +947,8 @@ class _MyHomePageState extends State<HomeScreen> {
                                 padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
                                     border: Border.all(
-                                        color: const Color(0xff007DA4), width: 2),
+                                        color: const Color(0xff007DA4),
+                                        width: 2),
                                     borderRadius: const BorderRadius.only(
                                       bottomLeft: Radius.circular(5),
                                       bottomRight: Radius.circular(5),
@@ -1268,136 +1295,147 @@ class _MyHomePageState extends State<HomeScreen> {
                       //     ],
                       //   ),
                       // ),
-                        
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "SO:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                            Expanded(
+
+                      hasModule('so')
+                          ? Container(
+                              margin: const EdgeInsets.only(left: 10),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    "$porcentaje_avance_so%",
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                  Text(
-                                    "${(double.parse(porcentaje_avance_so) * 0.2).toStringAsFixed(2)}%",
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "Cumplimiento de visita:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                            Expanded(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    "$cumplimiento_visita%",
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                  Text(
-                                    "${(double.parse(cumplimiento_visita) * 0.5).toStringAsFixed(2)}%",
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                        
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isVisible = !_isVisible;
-                          });
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 10),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  "Puntos de control:",
-                                  style: TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                              Expanded(
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      "$avance_porcentaje_dpc%",
-                                      style: const TextStyle(
+                                  const Expanded(
+                                    child: Text(
+                                      "SO:",
+                                      style: TextStyle(
                                           fontFamily: "Montserrat",
-                                          fontWeight: FontWeight.bold,
                                           color: Colors.black,
                                           fontSize: 16),
                                     ),
-                                    Text(
-                                      "${(double.parse(avance_porcentaje_dpc) * 0.1).toStringAsFixed(2)}%",
-                                      style: const TextStyle(
+                                  ),
+                                  Expanded(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          "$porcentaje_avance_so%",
+                                          style: const TextStyle(
+                                              fontFamily: "Montserrat",
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                              fontSize: 16),
+                                        ),
+                                        Text(
+                                          //"${(double.parse(porcentaje_avance_so) * 0.2).toStringAsFixed(2)}%",
+                                          "${(double.parse(porcentaje_avance_so) * 0.8).toStringAsFixed(2)}%",
+                                          style: const TextStyle(
+                                              fontFamily: "Montserrat",
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                              fontSize: 16),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Container(),
+                      hasModule('cumplimiento_visitas')
+                          ? Container(
+                              margin: const EdgeInsets.only(left: 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      "Cumplimiento de visita:",
+                                      style: TextStyle(
                                           fontFamily: "Montserrat",
-                                          fontWeight: FontWeight.bold,
                                           color: Colors.black,
                                           fontSize: 16),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          "$cumplimiento_visita%",
+                                          style: const TextStyle(
+                                              fontFamily: "Montserrat",
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                              fontSize: 16),
+                                        ),
+                                        const Text(
+                                          // "${(double.parse(cumplimiento_visita) * 0.5).toStringAsFixed(2)}%",
+                                          "",
+                                          style: TextStyle(
+                                              fontFamily: "Montserrat",
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                              fontSize: 16),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Container(),
+
+                      hasModule('puntos_control')
+                          ? GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isVisible = !_isVisible;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        "Puntos de control:",
+                                        style: TextStyle(
+                                            fontFamily: "Montserrat",
+                                            color: Colors.black,
+                                            fontSize: 16),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            "$avance_porcentaje_dpc%",
+                                            style: const TextStyle(
+                                                fontFamily: "Montserrat",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                                fontSize: 16),
+                                          ),
+                                          Text(
+                                            // "${(double.parse(avance_porcentaje_dpc) * 0.1).toStringAsFixed(2)}%",
+                                            "${(double.parse(avance_porcentaje_dpc) * 0.06).toStringAsFixed(2)}%",
+                                            style: const TextStyle(
+                                                fontFamily: "Montserrat",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                                fontSize: 16),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
+                            )
+                          : Container(),
                       AnimatedOpacity(
                         opacity: _isVisible ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 300),
@@ -1469,55 +1507,57 @@ class _MyHomePageState extends State<HomeScreen> {
                               )
                             : Container(),
                       ),
-                        
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isVisible_de = !_isVisible_de;
-                          });
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 10),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  "Exhibiciones:",
-                                  style: TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                              Expanded(
+
+                      hasModule('exhibiciones')
+                          ? GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isVisible_de = !_isVisible_de;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 10),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      "$avance_porcentaje_de%",
-                                      style: const TextStyle(
-                                          fontFamily: "Montserrat",
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                          fontSize: 16),
+                                    const Expanded(
+                                      child: Text(
+                                        "Exhibiciones:",
+                                        style: TextStyle(
+                                            fontFamily: "Montserrat",
+                                            color: Colors.black,
+                                            fontSize: 16),
+                                      ),
                                     ),
-                                    Text(
-                                      "${(double.parse(avance_porcentaje_de) * 0.1).toStringAsFixed(2)}%",
-                                      style: const TextStyle(
-                                          fontFamily: "Montserrat",
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                          fontSize: 16),
+                                    Expanded(
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            "$avance_porcentaje_de%",
+                                            style: const TextStyle(
+                                                fontFamily: "Montserrat",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                                fontSize: 16),
+                                          ),
+                                          Text(
+                                            "${(double.parse(avance_porcentaje_de) * 0.1).toStringAsFixed(2)}%",
+                                            style: const TextStyle(
+                                                fontFamily: "Montserrat",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                                fontSize: 16),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
+                            )
+                          : Container(),
                       AnimatedOpacity(
                         opacity: _isVisible_de ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 300),
@@ -1545,7 +1585,7 @@ class _MyHomePageState extends State<HomeScreen> {
                                           ),
                                           Expanded(
                                             child: Text(
-                                              total_ejecutado_de,
+                                              total_objetivo_de,
                                               style: const TextStyle(
                                                   fontFamily: "Montserrat",
                                                   fontWeight: FontWeight.bold,
@@ -1589,55 +1629,58 @@ class _MyHomePageState extends State<HomeScreen> {
                               )
                             : Container(),
                       ),
-                        
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isVisible_dl = !_isVisible_dl;
-                          });
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 10),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  "Lineal:",
-                                  style: TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                              Expanded(
+
+                      hasModule('lineal')
+                          ? GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isVisible_dl = !_isVisible_dl;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 10),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      "$avance_porcentaje_dl%",
-                                      style: const TextStyle(
-                                          fontFamily: "Montserrat",
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                          fontSize: 16),
+                                    const Expanded(
+                                      child: Text(
+                                        "Lineal:",
+                                        style: TextStyle(
+                                            fontFamily: "Montserrat",
+                                            color: Colors.black,
+                                            fontSize: 16),
+                                      ),
                                     ),
-                                    Text(
-                                      "${(double.parse(avance_porcentaje_dl) * 0.1).toStringAsFixed(2)}%",
-                                      style: const TextStyle(
-                                          fontFamily: "Montserrat",
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                          fontSize: 16),
+                                    Expanded(
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            "$avance_porcentaje_dl%",
+                                            style: const TextStyle(
+                                                fontFamily: "Montserrat",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                                fontSize: 16),
+                                          ),
+                                          Text(
+                                            // "${(double.parse(avance_porcentaje_dl) * 0.1).toStringAsFixed(2)}%",
+                                            "${(double.parse(avance_porcentaje_dl) * 0.04).toStringAsFixed(2)}%",
+                                            style: const TextStyle(
+                                                fontFamily: "Montserrat",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                                fontSize: 16),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
+                            )
+                          : Container(),
                       AnimatedOpacity(
                         opacity: _isVisible_dl ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 300),
@@ -1709,7 +1752,7 @@ class _MyHomePageState extends State<HomeScreen> {
                               )
                             : Container(),
                       ),
-                        
+
                       Container(
                         margin: const EdgeInsets.only(left: 10),
                         child: Row(
@@ -1727,7 +1770,8 @@ class _MyHomePageState extends State<HomeScreen> {
                             ),
                             Expanded(
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     "",
@@ -1738,7 +1782,8 @@ class _MyHomePageState extends State<HomeScreen> {
                                         fontSize: 16),
                                   ),
                                   Text(
-                                    "${((double.parse(cumplimiento_visita) * 0.5) + (double.parse(porcentaje_avance_so) * 0.2) + (double.parse(avance_porcentaje_dpc) * 0.1) + (double.parse(avance_porcentaje_de) * 0.1) + (double.parse(avance_porcentaje_dl) * 0.1)).toStringAsFixed(2)}%",
+                                    // "${((double.parse(cumplimiento_visita) * 0.5) + (double.parse(porcentaje_avance_so) * 0.2) + (double.parse(avance_porcentaje_dpc) * 0.1) + (double.parse(avance_porcentaje_de) * 0.1) + (double.parse(avance_porcentaje_dl) * 0.1)).toStringAsFixed(2)}%",
+                                    "${((double.parse(porcentaje_avance_so) * 0.8) + (double.parse(avance_porcentaje_dpc) * 0.06) + (double.parse(avance_porcentaje_de) * 0.1) + (double.parse(avance_porcentaje_dl) * 0.04)).toStringAsFixed(2)}%",
                                     style: const TextStyle(
                                         fontFamily: "Montserrat",
                                         fontWeight: FontWeight.bold,
@@ -1751,7 +1796,7 @@ class _MyHomePageState extends State<HomeScreen> {
                           ],
                         ),
                       ),
-                        
+
                       Container(
                         height: 10,
                       ),
@@ -1773,7 +1818,7 @@ class _MyHomePageState extends State<HomeScreen> {
                           ? SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Container(
-                                margin: EdgeInsets.all(10),
+                                margin: const EdgeInsets.all(10),
                                 child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceAround,
@@ -1796,13 +1841,15 @@ class _MyHomePageState extends State<HomeScreen> {
                                     //   ),
                                     // ),
                                     Container(
-                                      margin: EdgeInsets.all(5),
+                                      margin: const EdgeInsets.all(5),
                                       padding: const EdgeInsets.all(5),
                                       decoration: BoxDecoration(
                                           color: const Color(0xff007DA4),
                                           border: Border.all(
-                                              color: Color(0xff007DA4), width: 2),
-                                          borderRadius: BorderRadius.circular(5)),
+                                              color: const Color(0xff007DA4),
+                                              width: 2),
+                                          borderRadius:
+                                              BorderRadius.circular(5)),
                                       child: const Text(
                                         "Evidencia",
                                         style: TextStyle(
@@ -1812,13 +1859,15 @@ class _MyHomePageState extends State<HomeScreen> {
                                       ),
                                     ),
                                     Container(
-                                      margin: EdgeInsets.all(5),
+                                      margin: const EdgeInsets.all(5),
                                       padding: const EdgeInsets.all(5),
                                       decoration: BoxDecoration(
                                           color: const Color(0xff007DA4),
                                           border: Border.all(
-                                              color: Color(0xff007DA4), width: 2),
-                                          borderRadius: BorderRadius.circular(5)),
+                                              color: const Color(0xff007DA4),
+                                              width: 2),
+                                          borderRadius:
+                                              BorderRadius.circular(5)),
                                       child: const Text(
                                         "Visita",
                                         style: TextStyle(
@@ -1828,14 +1877,15 @@ class _MyHomePageState extends State<HomeScreen> {
                                       ),
                                     ),
                                     Container(
-                                      margin: EdgeInsets.all(5),
+                                      margin: const EdgeInsets.all(5),
                                       padding: const EdgeInsets.all(5),
                                       decoration: BoxDecoration(
                                           color: const Color(0xff007DA4),
                                           border: Border.all(
                                               color: const Color(0xff007DA4),
                                               width: 2),
-                                          borderRadius: BorderRadius.circular(5)),
+                                          borderRadius:
+                                              BorderRadius.circular(5)),
                                       child: const Text(
                                         "Tiempo",
                                         style: TextStyle(
@@ -1845,14 +1895,15 @@ class _MyHomePageState extends State<HomeScreen> {
                                       ),
                                     ),
                                     Container(
-                                      margin: EdgeInsets.all(5),
+                                      margin: const EdgeInsets.all(5),
                                       padding: const EdgeInsets.all(5),
                                       decoration: BoxDecoration(
                                           color: const Color(0xff007DA4),
                                           border: Border.all(
                                               color: const Color(0xff007DA4),
                                               width: 2),
-                                          borderRadius: BorderRadius.circular(5)),
+                                          borderRadius:
+                                              BorderRadius.circular(5)),
                                       child: const Text(
                                         "Quien la visito",
                                         style: TextStyle(
@@ -1862,14 +1913,15 @@ class _MyHomePageState extends State<HomeScreen> {
                                       ),
                                     ),
                                     Container(
-                                      margin: EdgeInsets.all(5),
+                                      margin: const EdgeInsets.all(5),
                                       padding: const EdgeInsets.all(5),
                                       decoration: BoxDecoration(
                                           color: const Color(0xff007DA4),
                                           border: Border.all(
                                               color: const Color(0xff007DA4),
                                               width: 2),
-                                          borderRadius: BorderRadius.circular(5)),
+                                          borderRadius:
+                                              BorderRadius.circular(5)),
                                       child: const Text(
                                         "Perfil",
                                         style: TextStyle(
@@ -1899,7 +1951,7 @@ class _MyHomePageState extends State<HomeScreen> {
                       //           fechaFl.add(const Duration(hours: -1));
                       //       String fechasctring = DateFormat('dd-MM-yyyy\nHH:mm:ss')
                       //           .format(nuevaFechaFl);
-                        
+
                       //       print("PAsa aqui $index vecesS");
                       //       return SingleChildScrollView(
                       //         scrollDirection: Axis.vertical,
@@ -1913,7 +1965,7 @@ class _MyHomePageState extends State<HomeScreen> {
                       //                     MainAxisAlignment.spaceAround,
                       //                 verticalDirection: VerticalDirection.up,
                       //                 children: [
-                        
+
                       //                   Container(
                       //                     margin: EdgeInsets.all(10),
                       //                     child: Text(
@@ -1971,9 +2023,9 @@ class _MyHomePageState extends State<HomeScreen> {
                       //   ),
                       // ),
                       Container(
-                        margin: EdgeInsets.all(10),
+                        margin: const EdgeInsets.all(10),
                         child: ListView.builder(
-                          physics: NeverScrollableScrollPhysics(),
+                          physics: const NeverScrollableScrollPhysics(),
                           shrinkWrap: true,
                           itemCount: totalVisitasdList == null
                               ? 0
@@ -1987,11 +2039,12 @@ class _MyHomePageState extends State<HomeScreen> {
                             String fechasctring =
                                 DateFormat('dd-MM-yyyy\nHH:mm:ss')
                                     .format(nuevaFechaFl);
-                        
+
                             return SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
                                 verticalDirection: VerticalDirection.up,
                                 children: [
                                   GestureDetector(
@@ -2017,7 +2070,7 @@ class _MyHomePageState extends State<HomeScreen> {
                                     ),
                                   ),
                                   Container(
-                                    margin: EdgeInsets.all(10),
+                                    margin: const EdgeInsets.all(10),
                                     child: Text(
                                       fechasctring,
                                       textAlign: TextAlign.center,
@@ -2029,7 +2082,7 @@ class _MyHomePageState extends State<HomeScreen> {
                                     ),
                                   ),
                                   Container(
-                                    margin: EdgeInsets.all(10),
+                                    margin: const EdgeInsets.all(10),
                                     child: Text(
                                       totalVisitasdList[index]
                                           ['diferencia_tiempo'],
@@ -2041,9 +2094,10 @@ class _MyHomePageState extends State<HomeScreen> {
                                     ),
                                   ),
                                   Container(
-                                    margin: EdgeInsets.all(10),
+                                    margin: const EdgeInsets.all(10),
                                     child: Text(
-                                      totalVisitasdList[index]['nombre_usuario'],
+                                      totalVisitasdList[index]
+                                          ['nombre_usuario'],
                                       style: const TextStyle(
                                         fontFamily: "Montserrat",
                                         color: Colors.black,
@@ -2052,7 +2106,7 @@ class _MyHomePageState extends State<HomeScreen> {
                                     ),
                                   ),
                                   Container(
-                                    margin: EdgeInsets.all(10),
+                                    margin: const EdgeInsets.all(10),
                                     child: Text(
                                       totalVisitasdList[index]['perfil'],
                                       style: const TextStyle(
@@ -2108,7 +2162,7 @@ class _MyHomePageState extends State<HomeScreen> {
                   break;
                 case 1:
                   showModal(context);
-                  // logout();
+                // logout();
               }
               setState(
                 () {

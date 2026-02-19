@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:search_choices/search_choices.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:vicomv2/widgets/app_drawer.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'loginScreen.dart';
@@ -58,11 +59,37 @@ class BiScreenState extends State<BiScreen> {
   final ImagePicker _picker = ImagePicker();
   var controller;
 
+  Map<String, bool> availableModules = {};
+  bool loadingModules = true;
+
   @override
   void initState() {
     super.initState();
     loginState();
+    loadModules();
     getData();
+  }
+
+  Future<void> loadModules() async {
+    final modules = await getStoredModules();
+
+    setState(() {
+      availableModules = modules;
+      loadingModules = false;
+    });
+
+    print('Módulos cargados en Home: $availableModules');
+  }
+
+  Future<Map<String, bool>> getStoredModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('available_modules');
+
+    if (raw == null) return {};
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+    return decoded.map((key, value) => MapEntry(key, value == true));
   }
 
   void loginState() async {
@@ -89,14 +116,16 @@ class BiScreenState extends State<BiScreen> {
             onPageFinished: (String url) {},
             onWebResourceError: (WebResourceError error) {},
             onNavigationRequest: (NavigationRequest request) {
-              if (request.url.startsWith('https://app.powerbi.com/view?r=eyJrIjoiMWIzZDZmMjAtZGU4MC00YWQwLWJmNTUtOWI1MTRjYmI0MjhlIiwidCI6IjUzMjIxMjc5LTkzMWQtNGUwNy04OTBkLTlhOGE0NDgxMTM2NyJ9')) {
+              if (request.url.startsWith(
+                  'https://app.powerbi.com/view?r=eyJrIjoiMWIzZDZmMjAtZGU4MC00YWQwLWJmNTUtOWI1MTRjYmI0MjhlIiwidCI6IjUzMjIxMjc5LTkzMWQtNGUwNy04OTBkLTlhOGE0NDgxMTM2NyJ9')) {
                 return NavigationDecision.prevent;
               }
               return NavigationDecision.navigate;
             },
           ),
         )
-        ..loadRequest(Uri.parse('https://app.powerbi.com/view?r=eyJrIjoiMWIzZDZmMjAtZGU4MC00YWQwLWJmNTUtOWI1MTRjYmI0MjhlIiwidCI6IjUzMjIxMjc5LTkzMWQtNGUwNy04OTBkLTlhOGE0NDgxMTM2NyJ9'));
+        ..loadRequest(Uri.parse(
+            'https://app.powerbi.com/view?r=eyJrIjoiMWIzZDZmMjAtZGU4MC00YWQwLWJmNTUtOWI1MTRjYmI0MjhlIiwidCI6IjUzMjIxMjc5LTkzMWQtNGUwNy04OTBkLTlhOGE0NDgxMTM2NyJ9'));
     });
   }
 
@@ -138,131 +167,57 @@ class BiScreenState extends State<BiScreen> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         key: _scaffoldKey,
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              DrawerHeader(
-                  decoration: const BoxDecoration(
-                    color: Color(0xff060024),
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      "assets/logo_app.png",
-                      scale: 6,
-                    ),
-                  )),
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Inicio'),
-                onTap: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                      HomeScreen.route(""), (route) => false);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.store),
-                title: const Text('Tiendas'),
-                onTap: () {
-                  logout();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Puntos de control'),
-                onTap: () {
-                  Navigator.of(context).push(PuntosControl.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Exhibiciones'),
-                onTap: () {
-                  Navigator.of(context).push(Exhibiciones.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Frentes'),
-                onTap: () {
-                  Navigator.of(context).push(Frentes.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Asignación de tareas'),
-                onTap: () {
-                  Navigator.of(context).push(AsignacionTareas.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Tareas'),
-                onTap: () {
-                  Navigator.of(context).push(Tareas.route(""));
-                },
-              ),
-              Builder(builder: (context) {
-                return ListTile(
-                  leading: const Icon(Icons.list_alt),
-                  title: const Text('Bi'),
-                  onTap: () {
-                    Scaffold.of(context).closeDrawer();
-                  },
-                );
-              }),
-            ],
-          ),
+        drawer: AppDrawer(
+          onLogout: logout,
+          availableModules: availableModules,
         ),
         // body: WebViewWidget(controller: controller),
         body: Container(
-          child: Column(
-            children: [
-              Container(
-                  color: const Color(0xff060024),
-                  padding: const EdgeInsets.only(
-                      top: 30, left: 20, right: 20, bottom: 30),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      Builder(
-                        builder: (context) {
-                          return GestureDetector(
-                            onTap: (){
-                              Scaffold.of(context).openDrawer();
-                            },
-                            child: Image.asset(
-                              "assets/logo_modulo.png",
-                              scale: 5,
-                            ),
-                          );
-                        }
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: const Text(
-                          "BI",
-                          style: TextStyle(fontFamily: "Montserrat",
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22),
-                        ),
-                      ),
-                    ],
+            child: Column(
+          children: [
+            Container(
+              color: const Color(0xff060024),
+              padding: const EdgeInsets.only(
+                  top: 30, left: 20, right: 20, bottom: 30),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                   ),
-                ),
-                Expanded(
-                  child: WebViewWidget(controller: controller),
-                ),
-            ],
-          )
-        ),
+                  Builder(builder: (context) {
+                    return GestureDetector(
+                      onTap: () {
+                        Scaffold.of(context).openDrawer();
+                      },
+                      child: Image.asset(
+                        "assets/logo_modulo.png",
+                        scale: 5,
+                      ),
+                    );
+                  }),
+                  Container(
+                    margin: const EdgeInsets.only(left: 10),
+                    child: const Text(
+                      "BI",
+                      style: TextStyle(
+                          fontFamily: "Montserrat",
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 22),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: WebViewWidget(controller: controller),
+            ),
+          ],
+        )),
         bottomNavigationBar: BottomNavigationBar(
           backgroundColor: const Color(0xff060024),
           items: const <BottomNavigationBarItem>[

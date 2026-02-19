@@ -9,10 +9,12 @@ import 'package:vicomv2/biscreen.dart';
 import 'package:vicomv2/exhibiciones.dart';
 import 'package:vicomv2/frentes.dart';
 import 'package:vicomv2/homescreen.dart';
+import 'package:vicomv2/providers/modules_provider.dart';
 import 'package:vicomv2/puntoscontrol.dart';
 import 'package:vicomv2/tareas.dart';
 import 'package:search_choices/search_choices.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:vicomv2/widgets/app_drawer.dart';
 
 import 'loginScreen.dart';
 
@@ -69,11 +71,37 @@ class AsignacionTareasState extends State<AsignacionTareas> {
 
   bool isSending = false;
 
+  Map<String, bool> availableModules = {};
+  bool loadingModules = true;
+
   @override
   void initState() {
     super.initState();
     loginState();
+    loadModules();
     getData();
+  }
+
+  Future<void> loadModules() async {
+    final modules = await getStoredModules();
+
+    setState(() {
+      availableModules = modules;
+      loadingModules = false;
+    });
+
+    print('Módulos cargados en Home: $availableModules');
+  }
+
+  Future<Map<String, bool>> getStoredModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('available_modules');
+
+    if (raw == null) return {};
+
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+    return decoded.map((key, value) => MapEntry(key, value == true));
   }
 
   void loginState() async {
@@ -90,7 +118,7 @@ class AsignacionTareasState extends State<AsignacionTareas> {
     SharedPreferences prefs1 = await SharedPreferences.getInstance();
 
     try {
-      var response = await Api().getTiendas(cuenta, "tareasc");
+      var response = await Api().getValoresTabla(cuenta, "tareasc");
       if (response.statusCode == 200) {
         print("Entro en response 200");
         String respuesta = response.body;
@@ -117,7 +145,8 @@ class AsignacionTareasState extends State<AsignacionTareas> {
     String imagen64 = base64.encode(bytes);
 
     try {
-      var response1 = await Api().getCheckTareasAsignadas(cuenta, tareaenv, idTienda);
+      var response1 =
+          await Api().getCheckTareasAsignadas(cuenta, tareaenv, idTienda);
       if (response1.statusCode == 200) {
         print("Entro en response 200");
         String respuesta = response1.body;
@@ -198,81 +227,9 @@ class AsignacionTareasState extends State<AsignacionTareas> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         key: _scaffoldKey,
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              DrawerHeader(
-                  decoration: const BoxDecoration(
-                    color: Color(0xff060024),
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      "assets/logo_app.png",
-                      scale: 6,
-                    ),
-                  )),
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Inicio'),
-                onTap: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                      HomeScreen.route(""), (route) => false);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.store),
-                title: const Text('Tiendas'),
-                onTap: () {
-                  logout();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Puntos de control'),
-                onTap: () {
-                  Navigator.of(context).push(PuntosControl.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Exhibiciones'),
-                onTap: () {
-                  Navigator.of(context).push(Exhibiciones.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_module),
-                title: const Text('Frentes'),
-                onTap: () {
-                  Navigator.of(context).push(Frentes.route(""));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('Tareas'),
-                onTap: () {
-                  Navigator.of(context).push(Tareas.route(""));
-                },
-              ),
-              Builder(builder: (context) {
-                return ListTile(
-                  leading: const Icon(Icons.list_alt),
-                  title: const Text('Asignación de tareas'),
-                  onTap: () {
-                    Scaffold.of(context).closeDrawer();
-                  },
-                );
-              }),
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('BI'),
-                onTap: () {
-                  Navigator.of(context).push(BiScreen.route(""));
-                },
-              ),
-            ],
-          ),
+        drawer: AppDrawer(
+          onLogout: logout,
+          availableModules: availableModules,
         ),
         body: Container(
           height: MediaQuery.of(context).size.height,
