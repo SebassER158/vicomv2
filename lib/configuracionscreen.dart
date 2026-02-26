@@ -120,156 +120,250 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     if (newuser == false) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: Stack(
-          children: [
-            // Image.asset(
-            //   "assets/background.png",
-            //   height: MediaQuery.of(context).size.height,
-            //   width: MediaQuery.of(context).size.width,
-            //   fit: BoxFit.fill,
-            // ),
-            Scaffold(
-              backgroundColor: Color(0xff060024),
-              body: Center(
-                child:
-                    SingleChildScrollView(child: Container(child: loginForm())),
+        theme: ThemeData(
+          textSelectionTheme: const TextSelectionThemeData(
+            cursorColor: Color(0xff007DA4),
+            selectionColor: Color(0x4D007DA4),
+            selectionHandleColor: Color(0xff007DA4),
+          ),
+        ),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: Container(
+                color: const Color(0xff060024), // Fallback
+                child: Column(
+                  children: [
+                    // --- TOP: LOGO & CURVE ---
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xff060024), Color(0xff060024)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background decoration circles
+                            Positioned(
+                              top: -50,
+                              left: -50,
+                              child: Container(
+                                width: 200,
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 50,
+                              right: -20,
+                              child: Container(
+                                width: 150,
+                                height: 150,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withOpacity(0.1),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.2),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 10),
+                                        )
+                                      ],
+                                    ),
+                                    child: Image.asset(
+                                      'assets/logo_login.png',
+                                      scale: 4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // --- BOTTOM: FORM ---
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(40),
+                            topRight: Radius.circular(40),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26, 
+                              spreadRadius: 5, 
+                              blurRadius: 20,
+                              offset: Offset(0, -5), // Changes position of shadow
+                            ),
+                          ],
+                        ),
+                        child: loginForm(),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
       );
     } else {
       return const Scaffold(
         body: Iniciosesion(),
-        //body: Text(""),
       );
     }
   }
 
   Widget loginForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: <Widget>[
-        Image.asset(
-          'assets/logo_login.png',
-          scale: 4,
-        ),
-        Container(
-          height: 40,
-        ),
-        // Container(
-        //   margin: const EdgeInsets.all(20),
-        //   child: Column(
-        //     children: const [
-        //       Divider(
-        //         color: Colors.white,
-        //         thickness: 1.5,
-        //       ),
-        //       Text("CONFIGURACIÓN",
-        //         style: TextStyle(fontFamily: "Montserrat",
-        //           color: Colors.white,
-        //           fontSize: 18,
-        //           letterSpacing: 3
-        //         )
-        //       ),
-        //       Divider(
-        //         color: Colors.white,
-        //         thickness: 1.5,
-        //       )
-        //     ],
-        //   ),
-        // ),
-        SizedBox(
-          width: 200.0,
-          child: Form(
-            key: _key,
-            child: Column(
-              children: <Widget>[
-                //Container(margin: EdgeInsets.only(top: MediaQuery.of(context).size.height/2),),
-                SizedBox(
-                  height: 50.0,
-                  child: TextFormField(
-                    validator: (text) {
-                      if (text!.isEmpty) {
-                        Fluttertoast.showToast(
-                            msg: "Campo requerido",
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.BOTTOM,
-                            timeInSecForIosWeb: 1,
-                            fontSize: 16.0);
-                        return "Campo requerido";
-                      }
-                      return null;
-                    },
-                    keyboardType: TextInputType.text,
-                    textAlign: TextAlign.center,
-                    textAlignVertical: TextAlignVertical.center,
-                    style: const TextStyle(
-                        fontFamily: "Montserrat",
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      // hintText: '*****',
-                      filled: true,
-                      fillColor: Colors.white,
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                            color: Color(0xff007DA4), width: 2.5),
-                        borderRadius: BorderRadius.circular(5.0),
-                      ),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: const BorderSide(
-                            color: Color(0xff007DA4), width: 2.5),
-                        borderRadius: BorderRadius.circular(5.0),
-                      ),
-                    ),
-                    onSaved: (text) => _nip = text!,
-                  ),
-                ),
-                !isLoading
-                    ? Container(
-                        padding: const EdgeInsets.all(5),
-                        margin: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white, width: 2),
-                          borderRadius: BorderRadius.circular(5.0),
-                        ),
-                        child: GestureDetector(
-                          onTap: () {
-                            if (_key.currentState!.validate()) {
-                              _key.currentState!.save();
-                              setState(() {
-                                isLoading = true;
-                              });
-                              userLogin(_nip);
-                            }
-                          },
-                          child: Container(
-                              padding: const EdgeInsets.all(5),
-                              alignment: Alignment.center,
-                              // ignore: sort_child_properties_last
-                              child: const Text(
-                                "ENTRAR",
-                                style: TextStyle(
-                                  fontFamily: "Montserrat",
-                                  fontSize: 20.0,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              color: Color(0xff007DA4)),
-                        ),
-                      )
-                    : Container(
-                        margin: const EdgeInsets.all(15),
-                        child: const CircularProgressIndicator(
-                          color: Colors.white,
-                        )),
-              ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Center(
+            child: Text(
+              'INGRESA LA CUENTA',
+              style: TextStyle(
+                fontFamily: "Montserrat",
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Color(0xff060024),
+              ),
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          Center(
+            child: Container(
+              height: 4,
+              width: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xff007DA4),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 50),
+
+          // Campo de texto para NIP
+          Form(
+            key: _key,
+            child: TextFormField(
+              keyboardType: TextInputType.text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: "Montserrat",
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xff060024),
+                letterSpacing: 2,
+              ),
+              decoration: InputDecoration(
+                hintText: "CUENTA",
+                hintStyle: TextStyle(
+                  fontFamily: "Montserrat",
+                  fontSize: 14,
+                  color: Colors.grey[400],
+                  letterSpacing: 1,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                fillColor: Colors.grey[50],
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: Colors.grey.withOpacity(0.5) != null 
+                      ? BorderSide(color: Colors.grey.withOpacity(0.5)) 
+                      : const BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: Color(0xff007DA4), width: 2),
+                ),
+              ),
+              validator: (text) {
+                if (text!.isEmpty) {
+                  return "Campo requerido";
+                }
+                return null;
+              },
+              onSaved: (text) => _nip = text!,
+            ),
+          ),
+          
+          const SizedBox(height: 50),
+
+          // ENTER BUTTON
+          !isLoading
+              ? SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_key.currentState!.validate()) {
+                        _key.currentState!.save();
+                        setState(() {
+                          isLoading = true;
+                        });
+                        userLogin(_nip);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff060024),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      elevation: 5,
+                      shadowColor: const Color(0xff060024).withOpacity(0.5),
+                    ),
+                    child: const Text(
+                      "ENTRAR",
+                      style: TextStyle(
+                        fontFamily: "Montserrat",
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                )
+              : Center(
+                  child: CircularProgressIndicator(
+                    color: const Color(0xff007DA4),
+                    strokeWidth: 4,
+                  ),
+                ),
+        ],
+      ),
     );
   }
 }

@@ -41,77 +41,92 @@ class _VistaWebViewScreenState extends State<VistaWebViewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       drawer: AppDrawer(
         onLogout: () {},
         availableModules: const {},
       ),
       body: Column(
         children: [
-          /// 🔷 HEADER
-          Container(
-            color: const Color(0xff060024),
-            padding: const EdgeInsets.only(
-                top: 40, left: 20, right: 20, bottom: 30),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                Builder(
-                  builder: (context) {
-                    return GestureDetector(
-                      onTap: () => Scaffold.of(context).openDrawer(),
-                      child: Image.asset(
-                        "assets/logo_modulo.png",
-                        scale: 5,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  widget.nombre,
-                  style: const TextStyle(
-                    fontFamily: "Montserrat",
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
+          // PREMIUM HEADER
+          Stack(
+            children: [
+              Container(
+                height: 160,
+                decoration: const BoxDecoration(
+                  color: Color(0xff060024),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
                   ),
                 ),
-              ],
-            ),
+              ),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      Expanded(
+                        child: Text(
+                          widget.nombre,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Builder(
+                        builder: (ctx) => IconButton(
+                          icon: const Icon(Icons.menu, color: Colors.white),
+                          onPressed: () => Scaffold.of(ctx).openDrawer(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
 
-          /// 🌐 WEBVIEW
+          // WEBVIEW
           Expanded(
-            child: WebViewWidget(controller: controller),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(0),
+                topRight: Radius.circular(0),
+              ),
+              child: WebViewWidget(controller: controller),
+            ),
           ),
         ],
       ),
 
-      /// 🔽 BOTTOM BAR
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xff060024),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.open_in_new_rounded),
-            label: 'Tiendas',
-          ),
-        ],
+        selectedItemColor: const Color(0xff007DA4),
+        unselectedItemColor: Colors.white60,
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
+          BottomNavigationBarItem(icon: Icon(Icons.refresh), label: 'Recargar'),
+        ],
         onTap: (index) {
           if (index == 0) {
             Navigator.of(context).pushAndRemoveUntil(
-              HomeScreen.route(""),
+              HomeScreen.route(''),
               (route) => false,
             );
+          } else if (index == 1) {
+            controller.reload();
           }
         },
       ),

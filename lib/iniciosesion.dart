@@ -42,6 +42,7 @@ class _IniciosesionState extends State<Iniciosesion> {
   final Uri _url = Uri.parse('https://mctree.com.mx/avisodeprivacidad/');
 
   bool _isSwitched = false;
+  bool _obscureText = true;
 
   double latitude = 0.0;
   double longitude = 0.0;
@@ -110,45 +111,119 @@ class _IniciosesionState extends State<Iniciosesion> {
   Widget build(BuildContext context) {
     if (newuser == false) {
       return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          textSelectionTheme: const TextSelectionThemeData(
+            // Set text cursor and selection handle color to corporate cyan
+            cursorColor: Color(0xff007DA4),
+            selectionColor: Color(0x4D007DA4),
+            selectionHandleColor: Color(0xff007DA4),
+          ),
+        ),
         home: Scaffold(
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color.fromRGBO(6, 0, 36, 1),
-                  Color.fromRGBO(6, 0, 36, 1)
-                ],
-              ),
-            ),
-            child: Column(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: Image.asset(
-                      'assets/logo_login.png',
-                      scale: 4,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
+          body: SingleChildScrollView(
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: Container(
+                color: const Color(0xff060024), // Fallback
+                child: Column(
+                  children: [
+                    // --- TOP: LOGO & CURVE ---
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xff060024), Color(0xff060024)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background decoration circles
+                            Positioned(
+                              top: -50,
+                              left: -50,
+                              child: Container(
+                                width: 200,
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 50,
+                              right: -20,
+                              child: Container(
+                                width: 150,
+                                height: 150,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withOpacity(0.1),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.2),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 10),
+                                        )
+                                      ],
+                                    ),
+                                    child: Image.asset(
+                                      'assets/logo_login.png',
+                                      scale: 4,
+                                      // color: Colors.white, // Uncomment if logo needs to be white
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    child: loginForm(),
-                  ),
+
+                    // --- BOTTOM: FORM ---
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(40),
+                            topRight: Radius.circular(40),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26, 
+                              spreadRadius: 5, 
+                              blurRadius: 20,
+                              offset: Offset(0, -5), // Changes position of shadow
+                            ),
+                          ],
+                        ),
+                        child: loginForm(),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -161,48 +236,62 @@ class _IniciosesionState extends State<Iniciosesion> {
   }
 
   Widget loginForm() {
-  return SingleChildScrollView(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          width: 300.0,
-          child: Form(
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Center(
+            child: Text(
+              'INICIA SESIÓN',
+              style: TextStyle(
+                fontFamily: "Montserrat",
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: Color(0xff060024),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Container(
+              height: 4,
+              width: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xff007DA4),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+
+          // Campo de texto para Usuario
+          Form(
             key: _key,
             child: Column(
-              children: <Widget>[
-                Container(
-                  height: 20,
-                ),
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  width: 200,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff007DA4),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'INICIA SESIÓN',
-                      style: TextStyle(
-                        fontFamily: "Montserrat",
-                        color: Colors.white,
-                        fontSize: 19,
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  height: 20,
-                ),
-                // Campo de texto para Usuario
+              children: [
                 TextFormField(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Usuario",
-                    floatingLabelAlignment: FloatingLabelAlignment.center,
-                    border: OutlineInputBorder(),
+                    floatingLabelBehavior: FloatingLabelBehavior.auto,
+                    prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xff060024)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(color: Colors.grey),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: Colors.grey.withOpacity(0.5) != null 
+                          ? BorderSide(color: Colors.grey.withOpacity(0.5)) 
+                          : const BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(color: Color(0xff007DA4), width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
                   ),
+                  style: const TextStyle(fontFamily: "Montserrat"),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingresa tu usuario';
@@ -213,17 +302,44 @@ class _IniciosesionState extends State<Iniciosesion> {
                     _usuario = value!;
                   },
                 ),
-                Container(
-                  height: 20,
-                ),
+                const SizedBox(height: 20),
+
                 // Campo de texto para Contraseña
                 TextFormField(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Contraseña",
-                    floatingLabelAlignment: FloatingLabelAlignment.center,
-                    border: OutlineInputBorder(),
+                    floatingLabelBehavior: FloatingLabelBehavior.auto,
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xff060024)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureText ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                        color: const Color(0xff060024).withOpacity(0.6),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureText = !_obscureText;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(color: Colors.grey),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: Colors.grey.withOpacity(0.5) != null 
+                          ? BorderSide(color: Colors.grey.withOpacity(0.5)) 
+                          : const BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(color: Color(0xff007DA4), width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
                   ),
-                  obscureText: true,
+                  obscureText: _obscureText,
+                  style: const TextStyle(fontFamily: "Montserrat"),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingresa tu contraseña';
@@ -234,71 +350,76 @@ class _IniciosesionState extends State<Iniciosesion> {
                     _password = value!;
                   },
                 ),
-                Container(
-                  height: 20,
-                ),
-                !isLoading
-                    ? Container(
-                        padding: const EdgeInsets.all(5),
-                        margin: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color.fromRGBO(6, 0, 36, 1),
-                          border: Border.all(color: Colors.white, width: 2),
-                          borderRadius: BorderRadius.circular(15.0),
-                        ),
-                        child: GestureDetector(
-                          onTap: () {
-                            if (_key.currentState!.validate()) {
-                              _key.currentState!.save();
-                              setState(() {
-                                isLoading = true;
-                              });
-                              userLogin(_usuario, _password);
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(5),
-                            alignment: Alignment.center,
-                            color: Colors.transparent,
-                            child: const Text(
-                              "ENTRAR",
-                              style: TextStyle(
-                                fontFamily: "Montserrat",
-                                fontSize: 20.0,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        margin: const EdgeInsets.all(15),
-                        child: const CircularProgressIndicator(
-                          color: Color(0xff007DA4),
-                        )),
-                Container(
-                  height: 20,
-                ),
-                GestureDetector(
-                  onTap: () {
-                    _launchUrl();
-                  },
-                  child: const Text("Aviso de privacidad",
-                      style: TextStyle(
-                        letterSpacing: 1,
-                        fontFamily: "Montserrat",
-                      )),
-                ),
               ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          
+          const SizedBox(height: 40),
 
+          // LOGIN BUTTON
+          !isLoading
+              ? SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_key.currentState!.validate()) {
+                        _key.currentState!.save();
+                        setState(() {
+                          isLoading = true;
+                        });
+                        userLogin(_usuario, _password);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff060024),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      elevation: 5,
+                      shadowColor: const Color(0xff060024).withOpacity(0.5),
+                    ),
+                    child: const Text(
+                      "ENTRAR",
+                      style: TextStyle(
+                        fontFamily: "Montserrat",
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                )
+              : Center(
+                  child: CircularProgressIndicator(
+                    color: const Color(0xff007DA4),
+                    strokeWidth: 4,
+                  ),
+                ),
 
+          const SizedBox(height: 30),
+
+          // PRIVACY POLICY
+          Center(
+            child: GestureDetector(
+              onTap: _launchUrl,
+              child: Text(
+                "Aviso de privacidad",
+                style: TextStyle(
+                  fontFamily: "Montserrat",
+                  color: Colors.grey[600],
+                  decoration: TextDecoration.underline,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+ 
   Future<void> _launchUrl() async {
     if (!await launchUrl(_url)) {
       throw Exception('Could not launch $_url');

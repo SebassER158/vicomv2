@@ -103,91 +103,128 @@ class _VistasScreenState extends State<VistasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       drawer: AppDrawer(
         onLogout: () {},
         availableModules: const {},
       ),
       body: Column(
         children: [
-          /// 🔷 HEADER
-          Container(
-            color: const Color(0xff060024),
-            padding: const EdgeInsets.only(
-                top: 40, left: 20, right: 20, bottom: 30),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                Builder(
-                  builder: (context) {
-                    return GestureDetector(
-                      onTap: () => Scaffold.of(context).openDrawer(),
-                      child: Image.asset(
-                        "assets/logo_modulo.png",
-                        scale: 5,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  "Vistas",
-                  style: TextStyle(
-                    fontFamily: "Montserrat",
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
+          // PREMIUM HEADER
+          Stack(
+            children: [
+              Container(
+                height: 180,
+                decoration: const BoxDecoration(
+                  color: Color(0xff060024),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
                   ),
                 ),
-              ],
-            ),
+              ),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Text(
+                        'Vistas',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Builder(
+                        builder: (ctx) => IconButton(
+                          icon: const Icon(Icons.menu, color: Colors.white),
+                          onPressed: () => Scaffold.of(ctx).openDrawer(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
 
-          /// 🔘 LISTA
+          // LIST
           Expanded(
             child: loading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: vistas.length,
-                    itemBuilder: (context, index) {
-                      final item = vistas[index];
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: const Color(0xff060024),
-                            foregroundColor: Colors.white,
-                          ),
-                          // 🟢 MODIFICADO: Convertimos a async para procesar la URL
-                          onPressed: () async {
-                            // Llamamos a la función constructora
-                            String urlFinal = await _generarUrlDinamica(
-                              item['url'], 
-                              item['params'] // Pasamos el string de la BD
-                            );
-
-                            if (!mounted) return; // Seguridad de contexto
-
-                            Navigator.of(context).push(
-                              VistaWebViewScreen.route(
-                                item['nombre'],
-                                urlFinal, // Enviamos la URL con variables
-                              ),
-                            );
-                          },
-                          child: Text(
-                            item['nombre'],
-                            style: const TextStyle(fontSize: 16),
-                          ),
+                ? const Center(child: CircularProgressIndicator(color: Color(0xff007DA4)))
+                : vistas.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.dashboard_outlined, size: 60, color: Colors.grey),
+                            const SizedBox(height: 12),
+                            Text('No hay vistas disponibles', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                          ],
                         ),
-                      );
-                    },
-                  ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(20),
+                        itemCount: vistas.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final item = vistas[index];
+                          return GestureDetector(
+                            onTap: () async {
+                              String urlFinal = await _generarUrlDinamica(
+                                item['url'],
+                                item['params'],
+                              );
+                              if (!mounted) return;
+                              Navigator.of(context).push(
+                                VistaWebViewScreen.route(item['nombre'], urlFinal),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 3)),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xff007DA4).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(Icons.bar_chart, color: Color(0xff007DA4), size: 22),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      item['nombre'],
+                                      style: const TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        color: Color(0xff060024),
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_forward_ios, color: Color(0xff007DA4), size: 16),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),

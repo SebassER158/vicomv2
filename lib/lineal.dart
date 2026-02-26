@@ -182,285 +182,130 @@ class _MyHomePageState extends State<Lineal> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(fontFamily: 'Montserrat'),
       home: Scaffold(
         key: _scaffoldKey,
-        drawer: AppDrawer(
-          onLogout: logout,
-          availableModules: availableModules,
-        ),
-        body: Container(
-          height: MediaQuery.of(context).size.height,
-          child: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                Container(
-                  color: const Color(0xff060024),
-                  padding: const EdgeInsets.only(
-                      top: 30, left: 20, right: 20, bottom: 30),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
+        backgroundColor: Colors.grey[100],
+        drawer: AppDrawer(onLogout: logout, availableModules: availableModules),
+        body: SingleChildScrollView(
+          child: Column(
+            children: <Widget>[
+              Stack(
+                children: [
+                  Container(
+                    height: 180,
+                    decoration: const BoxDecoration(
+                      color: Color(0xff060024),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(30),
+                        bottomRight: Radius.circular(30),
                       ),
-                      Builder(builder: (context) {
-                        return GestureDetector(
-                          onTap: () {
-                            Scaffold.of(context).openDrawer();
-                          },
-                          child: Image.asset(
-                            "assets/logo_modulo.png",
-                            scale: 5,
-                          ),
-                        );
-                      }),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: const Text(
-                          "Lineal",
-                          style: TextStyle(
-                              fontFamily: "Montserrat",
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                Container(
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                color: const Color(0xff007DA4),
-                                border: Border.all(
-                                    color: const Color(0xff007DA4), width: 2),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(5),
-                                  bottomLeft: Radius.circular(5),
-                                )),
-                            child: const Text(
-                              "Formato:",
-                              style: TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.white,
-                                  fontSize: 16),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: const Color(0xff007DA4), width: 2),
-                                borderRadius: const BorderRadius.only(
-                                  topRight: Radius.circular(5),
-                                  bottomRight: Radius.circular(5),
-                                )),
-                            child: Text(
-                              formato,
-                              style: const TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.black,
-                                  fontSize: 16),
-                            ),
-                          ),
+                          IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                          const Text('Lineal', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                          Builder(builder: (ctx) => IconButton(icon: const Icon(Icons.menu, color: Colors.white), onPressed: () => Scaffold.of(ctx).openDrawer())),
                         ],
                       ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                color: const Color(0xff007DA4),
-                                border: Border.all(
-                                    color: const Color(0xff007DA4), width: 2),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(5),
-                                  bottomLeft: Radius.circular(5),
-                                )),
-                            child: const Text(
-                              "Tienda:",
-                              style: TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.white,
-                                  fontSize: 16),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: const Color(0xff007DA4), width: 2),
-                                borderRadius: const BorderRadius.only(
-                                  topRight: Radius.circular(5),
-                                  bottomRight: Radius.circular(5),
-                                )),
-                            child: Text(
-                              tienda,
-                              style: const TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.black,
-                                  fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      const Divider(
-                        color: Colors.white10,
-                        thickness: 2,
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Center(
-                              child: Text(
-                                "Objetivo:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                objetivo,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Expanded(
-                            child: Center(
-                              child: Text(
-                                "Ejecutado:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                ejecutado,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Expanded(
-                            child: Center(
-                              child: Text(
-                                "Avance:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                "$avance%",
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+                      ),
+                      child: Column(
+                        children: [
+                          _infoRow(Icons.store, 'Tienda', tienda),
+                          const Divider(height: 25, color: Colors.grey),
+                          _infoRow(Icons.category, 'Formato', formato),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(child: _buildMetricCard('Objetivo', objetivo, const Color(0xff007DA4))),
+                        const SizedBox(width: 15),
+                        Expanded(child: _buildMetricCard('Ejecutado', ejecutado, const Color(0xff060024))),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    _buildMetricCard('Avance Global', '$avance%', Colors.green),
+                    const SizedBox(height: 30),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         bottomNavigationBar: BottomNavigationBar(
           backgroundColor: const Color(0xff060024),
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.open_in_new_rounded),
-              label: 'Tiendas',
-            ),
-          ],
+          selectedItemColor: const Color(0xff007DA4),
+          unselectedItemColor: Colors.white60,
           currentIndex: _selectedIndex,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey,
-          onTap: (int index) {
-            switch (index) {
-              case 0:
-                // only scroll to top when current index is selected.
-                if (_selectedIndex == index) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                      HomeScreen.route(""), (route) => false);
-                }
-                break;
-              case 1:
-                // showModal(context);
-                logout();
-            }
-            setState(
-              () {
-                _selectedIndex = index;
-              },
-            );
+          onTap: (index) {
+            if (index == 0 && _selectedIndex == index) Navigator.of(context).pushAndRemoveUntil(HomeScreen.route(''), (r) => false);
+            else if (index == 1) logout();
+            setState(() => _selectedIndex = index);
           },
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
+            BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Cerrar Sesión'),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: const Color(0xff007DA4).withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: const Color(0xff007DA4), size: 20)),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label.toUpperCase(), style: TextStyle(color: Colors.grey[600], fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            const SizedBox(height: 3),
+            Text(value, style: const TextStyle(color: Color(0xff060024), fontSize: 15, fontWeight: FontWeight.bold)),
+          ],
+        )),
+      ],
+    );
+  }
+
+  Widget _buildMetricCard(String label, String value, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+        border: Border.all(color: color.withOpacity(0.1)),
+      ),
+      child: Column(
+        children: [
+          Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12), textAlign: TextAlign.center),
+        ],
       ),
     );
   }

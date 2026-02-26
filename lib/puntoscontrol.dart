@@ -244,399 +244,365 @@ class _MyHomePageState extends State<PuntosControl> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: "Montserrat",
+      ),
       home: Scaffold(
         key: _scaffoldKey,
+        backgroundColor: Colors.grey[100], // Light background for content contrast
         drawer: AppDrawer(
           onLogout: logout,
           availableModules: availableModules,
         ),
         body: SmartRefresher(
           header: const WaterDropMaterialHeader(
-            color: Color.fromRGBO(6, 0, 36, 1),
+            color: Color(0xff060024),
             backgroundColor: Color(0xff007DA4),
           ),
           onRefresh: _onRefresh,
           controller: _refreshController,
           child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height,
-              ),
-              child: Column(
-                children: <Widget>[
-                  Container(
-                    color: const Color(0xff060024),
-                    padding: const EdgeInsets.only(
-                        top: 30, left: 20, right: 20, bottom: 30),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon:
-                              const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
+            child: Column(
+              children: <Widget>[
+                // --- PREMIUM HEADER ---
+                Stack(
+                  children: [
+                    Container(
+                      height: 180,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xff060024), Color(0xff060024)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
                         ),
-                        // Image.asset(
-                        //   "assets/logo_modulo.png",
-                        //   scale: 5,
-                        // ),
-                        Builder(builder: (context) {
-                          return GestureDetector(
-                            onTap: () {
-                              Scaffold.of(context).openDrawer();
-                            },
-                            child: Image.asset(
-                              "assets/logo_modulo.png",
-                              scale: 5,
-                            ),
-                          );
-                        }),
-                        Container(
-                          margin: const EdgeInsets.only(left: 10),
-                          child: const Text(
-                            "Puntos de Control",
-                            style: TextStyle(
-                                fontFamily: "Montserrat",
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 22),
-                          ),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                  Container(
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 20,
+                    Positioned(
+                      top: -50,
+                      left: -50,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          shape: BoxShape.circle,
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 20,
+                      right: -30,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        child: Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                  color: const Color(0xff007DA4),
-                                  border: Border.all(
-                                      color: const Color(0xff007DA4), width: 2),
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(5),
-                                    bottomLeft: Radius.circular(5),
-                                  )),
-                              child: const Text(
-                                "Formato:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                                const Text(
+                                  "Puntos de Control",
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 16),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                  border: Border.all(
-                                      color: const Color(0xff007DA4), width: 2),
-                                  borderRadius: const BorderRadius.only(
-                                    topRight: Radius.circular(5),
-                                    bottomRight: Radius.circular(5),
-                                  )),
-                              child: Text(
-                                formato,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Builder(builder: (context) {
+                                  return IconButton(
+                                    icon: const Icon(Icons.menu, color: Colors.white),
+                                    onPressed: () => Scaffold.of(context).openDrawer(),
+                                  );
+                                }),
+                              ],
                             ),
                           ],
                         ),
-                        Container(
-                          height: 20,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // --- CONTENT CONTAINER ---
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // INFO STORE & FORMAT CARD
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                  color: const Color(0xff007DA4),
-                                  border: Border.all(
-                                      color: const Color(0xff007DA4), width: 2),
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(5),
-                                    bottomLeft: Radius.circular(5),
-                                  )),
-                              child: const Text(
-                                "Tienda:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.white,
-                                    fontSize: 16),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                  border: Border.all(
-                                      color: const Color(0xff007DA4), width: 2),
-                                  borderRadius: const BorderRadius.only(
-                                    topRight: Radius.circular(5),
-                                    bottomRight: Radius.circular(5),
-                                  )),
-                              child: Text(
-                                tienda,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
+                            _buildInfoRow(Icons.store, "Tienda", tienda),
+                            const Divider(height: 30, color: Colors.grey),
+                            _buildInfoRow(Icons.category, "Formato", formato),
                           ],
                         ),
-                        Container(
-                          height: 20,
-                        ),
-                        const Divider(
-                          color: Colors.white10,
-                          thickness: 2,
-                        ),
-                        Container(
-                          height: 20,
-                        ),
-                        Row(
-                          children: [
-                            const Expanded(
-                              child: Center(
-                                child: Text(
-                                  "Objetivo:",
-                                  style: TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Center(
-                                child: Text(
-                                  objetivo,
-                                  style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          height: 20,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            const Expanded(
-                              child: Center(
-                                child: Text(
-                                  "Ejecutado:",
-                                  style: TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Center(
-                                child: Text(
-                                  ejecutado,
-                                  style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          height: 20,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            const Expanded(
-                              child: Center(
-                                child: Text(
-                                  "Avance:",
-                                  style: TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Center(
-                                child: Text(
-                                  "$avance%",
-                                  style: const TextStyle(
-                                      fontFamily: "Montserrat",
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          height: 20,
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(5),
-                                bottomRight: Radius.circular(5),
-                              )),
-                          child: Text(
-                            "Puntos de Control Ejecutados",
-                            style: const TextStyle(
-                                fontFamily: "Montserrat",
-                                color: Colors.black,
-                                fontSize: 16),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // METRICS CARDS ROW
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildMetricCard("Objetivo", objetivo, const Color(0xff007DA4)),
                           ),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: _buildMetricCard("Ejecutado", ejecutado, const Color(0xff060024)),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 15),
+                      
+                      // PROGRESS METRIC (Full Width)
+                      _buildMetricCard("Avance Global", "$avance%", Colors.green, isFullWidth: true),
+
+                      const SizedBox(height: 30),
+
+                      // LIST: EJECUTADOS
+                      _buildSectionHeader("Puntos de Control Ejecutados", Icons.check_circle_outline),
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0,2))],
                         ),
-                        Container(
-                          margin: EdgeInsets.all(15),
-                          child: ListView.builder(
-                            // physics: const AlwaysScrollableScrollPhysics(),
-                            physics: NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount: pcEjecutadosList == null
-                                ? 0
-                                : pcEjecutadosList.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              return Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  Flexible(
-                                    child: Text(
+                        child: (pcEjecutadosList == null || pcEjecutadosList.isEmpty)
+                            ? const Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Text("No hay registros", style: TextStyle(color: Colors.grey)),
+                              )
+                            : ListView.separated(
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                itemCount: pcEjecutadosList.length,
+                                separatorBuilder: (context, index) => const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  return ListTile(
+                                    leading: const Icon(Icons.check, color: Colors.green),
+                                    title: Text(
                                       pcEjecutadosList[index]['opcion'],
-                                      textAlign: TextAlign.center,
                                       style: const TextStyle(
-                                          fontFamily: "Montserrat",
-                                          color: Colors.black,
-                                          fontSize: 16),
+                                        fontFamily: "Montserrat",
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
+                                  );
+                                },
+                              ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // LIST: PENDIENTES
+                      _buildSectionHeader("Puntos de Control Pendientes", Icons.pending_actions),
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0,2))],
                         ),
-                        Container(
-                          height: 20,
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: const Color(0xff007DA4), width: 2),
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(5),
-                                bottomRight: Radius.circular(5),
-                              )),
-                          child: Text(
-                            "Puntos de Control Pendientes",
-                            style: const TextStyle(
-                                fontFamily: "Montserrat",
-                                color: Colors.black,
-                                fontSize: 16),
-                          ),
-                        ),
-                        Container(
-                          margin: EdgeInsets.all(15),
-                          child: ListView.builder(
-                            // physics: const AlwaysScrollableScrollPhysics(),
-                            physics: NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount: pcPendienteList == null
-                                ? 0
-                                : pcPendienteList.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              return Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  Flexible(
-                                    child: Text(
+                        child: (pcPendienteList == null || pcPendienteList.isEmpty)
+                            ? const Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Text("No hay pendientes", style: TextStyle(color: Colors.grey)),
+                              )
+                            : ListView.separated(
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                itemCount: pcPendienteList.length,
+                                separatorBuilder: (context, index) => const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  return ListTile(
+                                    leading: Icon(Icons.circle_outlined, color: Colors.orange[400]),
+                                    title: Text(
                                       pcPendienteList[index]['opcion'],
-                                      textAlign: TextAlign.center,
                                       style: const TextStyle(
-                                          fontFamily: "Montserrat",
-                                          color: Colors.black,
-                                          fontSize: 16),
+                                        fontFamily: "Montserrat",
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                      
+                      const SizedBox(height: 30),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
         bottomNavigationBar: BottomNavigationBar(
           backgroundColor: const Color(0xff060024),
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.open_in_new_rounded),
-              label: 'Tiendas',
-            ),
-          ],
+          selectedItemColor: const Color(0xff007DA4), // Cyan active
+          unselectedItemColor: Colors.white60,
           currentIndex: _selectedIndex,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey,
           onTap: (int index) {
             switch (index) {
               case 0:
-                // only scroll to top when current index is selected.
                 if (_selectedIndex == index) {
                   Navigator.of(context).pushAndRemoveUntil(
                       HomeScreen.route(""), (route) => false);
                 }
                 break;
               case 1:
-                // showModal(context);
-                logout();
+                logout(); // Changed to match previous logic (case 1 was login/logout)
+                break;
             }
-            setState(
-              () {
-                _selectedIndex = index;
-              },
-            );
+            setState(() {
+              _selectedIndex = index;
+            });
           },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.logout),
+              label: 'Cerrar Sesión',
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  // --- HELPER WIDGETS ---
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xff007DA4).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: const Color(0xff007DA4)),
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Color(0xff060024),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricCard(String label, String value, Color color, {bool isFullWidth = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+      // width: isFullWidth ? double.infinity : null,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: Border.all(color: color.withOpacity(0.1)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xff007DA4), size: 20),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xff060024),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 

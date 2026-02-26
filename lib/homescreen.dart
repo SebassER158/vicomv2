@@ -17,7 +17,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
+import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart' hide RefreshIndicator;
 import 'package:vicomv2/widgets/app_drawer.dart';
 
 import 'loginScreen.dart';
@@ -48,6 +48,7 @@ class _MyHomePageState extends State<HomeScreen> {
   String perfil = "";
   String userCeys = "";
   String nombreUsuario = "";
+  String saludo = "Hola,";
   String fecha_cadena = "";
 
   late String datatv;
@@ -114,6 +115,7 @@ class _MyHomePageState extends State<HomeScreen> {
   String deviceModel = 'Unknown';
 
   bool _isSwitched = false;
+  bool _isLoading = true;
 
   double latitude = 0.0;
   double longitude = 0.0;
@@ -129,18 +131,6 @@ class _MyHomePageState extends State<HomeScreen> {
     super.initState();
     loginState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // final modulesProvider = context.read<ModulesProvider>();
-
-      // // Solo cargar si NO está inicializado
-      // if (!modulesProvider.initialized) {
-      //   _showLoadingDialog();
-
-      //   await modulesProvider.loadFromStorage();
-
-      //   if (mounted) {
-      //     Navigator.of(context, rootNavigator: true).pop(); // cerrar dialog
-      //   }
-      // }
       await loadModules();
       getData();
     });
@@ -200,8 +190,6 @@ class _MyHomePageState extends State<HomeScreen> {
       }
     }
 
-    // var res_mod = await Api().saveModelos(cuenta, 0, deviceModel);
-
     print("La version es $deviceModel");
   }
 
@@ -215,7 +203,6 @@ class _MyHomePageState extends State<HomeScreen> {
       numero = (prefs.getString('numero') ?? "");
       cadena = (prefs.getString('cadena') ?? "");
     });
-    // _getDeviceInfo();
   }
 
   Future<void> loadModules() async {
@@ -244,317 +231,300 @@ class _MyHomePageState extends State<HomeScreen> {
     return availableModules[key] == true;
   }
 
-  void getData() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      useRootNavigator: true,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Container(
-            width: 100,
-            height: 100,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 4,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        );
-      },
-    );
+  void getData({bool showLoading = true}) async {
+    if (showLoading) {
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
+    }
 
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      var responsefc =
-          await Api().getFechaCadena(cuenta, prefs.getString('cadena') ?? "");
-      if (responsefc.statusCode == 200) {
-        print("Entro en response 200");
-        String respuesta = responsefc.body;
-        var datafc = jsonDecode(respuesta);
-        DateTime fechaF = DateTime.parse(datafc[0]["fecha"]).toLocal();
+      
+      String currentCuenta = prefs.getString('cuenta') ?? "";
+      int currentIdTienda = prefs.getInt('idTienda') ?? 0;
+      String currentCadena = prefs.getString('cadena') ?? "";
+      String currentNumero = prefs.getString('numero') ?? "";
+      
+      if (mounted) {
+          setState(() {
+              cuenta = currentCuenta;
+              idTienda = currentIdTienda;
+              cadena = currentCadena;
+              numero = currentNumero;
+          });
+      }
 
+      List<Future> futures = [];
+
+      // 1. Fecha Cadena
+      futures.add(Future(() async {
+        try {
+          var responsefc = await Api().getFechaCadena(currentCuenta, currentCadena);
+          if (responsefc.statusCode == 200) {
+            String respuesta = responsefc.body;
+            var datafc = jsonDecode(respuesta);
+            DateTime fechaF = DateTime.parse(datafc[0]["fecha"]).toLocal();
+            if (mounted) {
+              setState(() {
+                fecha_cadena = DateFormat('dd-MM-yyyy').format(fechaF);
+              });
+            }
+          }
+        } catch (e) {
+          print("Error fecha cadena: $e");
+        }
+      }));
+
+      // 2. Tiendas
+      futures.add(Future(() async {
+        try {
+          var response = await Api().getValoresTabla(currentCuenta, "tiendas");
+          if (response.statusCode == 200) {
+            String respuesta = response.body;
+            if (mounted) {
+              setState(() {
+                tiendas2 = jsonDecode(respuesta);
+              });
+            }
+          }
+        } catch (e) {
+          print("Error tiendas: $e");
+        }
+      }));
+
+      // 3. Ultima Visita
+      futures.add(Future(() async {
+        try {
+          var response = await Api().getUltimaVisita(currentCuenta, currentIdTienda);
+          if (response.statusCode == 200) {
+            if (mounted) {
+              setState(() {
+                datauv = response.body;
+                ultimaVisita = jsonDecode(datauv);
+                ultimaVisitaList = ultimaVisita ?? [];
+
+                if (ultimaVisitaList.isNotEmpty) {
+                  DateTime fechaF = DateTime.parse(ultimaVisita[0]['fecha_i']).toLocal();
+                  DateTime nuevaFechaF = fechaF.add(const Duration(hours: -2));
+                  fechaInicial = DateFormat('dd-MM-yyyy HH:mm:ss').format(nuevaFechaF);
+                  userCeys = ultimaVisita[0]['userCeys'] ?? "";
+                  perfil = ultimaVisita[0]['perfil'];
+                  nombreUsuario = ultimaVisita[0]['nombre_usuario'];
+                }
+              });
+            }
+          }
+        } catch (e) {
+          print("Error ultima visita: $e");
+        }
+      }));
+
+      // 4. Total Visitas
+      futures.add(Future(() async {
+        try {
+          var response2 = await Api().getTotalVisitas(currentCuenta, currentIdTienda);
+          if (response2.statusCode == 200) {
+            if (mounted) {
+              setState(() {
+                datatv = response2.body;
+                totalVisitas = jsonDecode(datatv);
+                totalVisitasList = totalVisitas ?? [];
+                if (totalVisitasList.isNotEmpty) {
+                  totalvis = totalVisitasList[0]['total'].toString();
+                }
+              });
+            }
+          }
+        } catch (e) {
+           print("Error total visitas: $e");
+        }
+      }));
+
+      // 5. Estadia Tienda
+      futures.add(Future(() async {
+        try {
+          var response3 = await Api().getEstadiaTienda(currentCuenta, currentIdTienda);
+          if (response3.statusCode == 200) {
+            if (mounted) {
+              setState(() {
+                dataet = response3.body;
+                estadiaTienda = jsonDecode(dataet);
+                estadiaTiendaList = estadiaTienda ?? [];
+                if (estadiaTiendaList.isNotEmpty) {
+                  total_horas_et = estadiaTiendaList[0]['total_horas'];
+                }
+              });
+            }
+          }
+        } catch (e) {
+          print("Error estadia tienda: $e");
+        }
+      }));
+
+      // 6. Total Estadia
+      futures.add(Future(() async {
+        try {
+          var response4 = await Api().getTotalEstadia(currentCuenta, currentIdTienda);
+          if (response4.statusCode == 200) {
+            if (mounted) {
+              setState(() {
+                datate = response4.body;
+                totalEstadia = jsonDecode(datate);
+                totalEstadiaList = totalEstadia ?? [];
+                if (totalEstadiaList.isNotEmpty) {
+                  total_horas_te = totalEstadiaList[0]['total_horas'];
+                }
+              });
+            }
+          }
+        } catch (e) {
+          print("Error total estadia: $e");
+        }
+      }));
+
+      // 7. Total Visitas Detalle
+      futures.add(Future(() async {
+        try {
+          var response5 = await Api().getTotalVisitasDetalle(currentCuenta, currentIdTienda);
+          if (response5.statusCode == 200) {
+            if (mounted) {
+              setState(() {
+                datatvd = response5.body;
+                totalVisitasd = jsonDecode(datatvd);
+                totalVisitasdList = totalVisitasd ?? [];
+              });
+            }
+          }
+        } catch (e) {
+          print("Error total visitas detalle: $e");
+        }
+      }));
+
+      // 8. Cumplimiento Visitas (Condicional)
+      if (hasModule('cumplimiento_visitas')) {
+        futures.add(Future(() async {
+          try {
+            var response6 = await Api().getCumplimientoVisita(currentCuenta, currentIdTienda);
+            if (response6.statusCode == 200) {
+              if (mounted) {
+                setState(() {
+                  datacv = response6.body;
+                  cumplimientoVisita = jsonDecode(datacv);
+                  cumplimientoVisitaList = cumplimientoVisita ?? [];
+                  cumplimiento_visita = (cumplimientoVisitaList[0]['porcentaje_cumplimiento'] ?? 0).toStringAsFixed(2);
+                });
+              }
+            }
+          } catch (e) {
+            print("Error cumplimiento visitas: $e");
+          }
+        }));
+      }
+
+      // 9. Puntos Control (Condicional)
+      if (hasModule('puntos_control')) {
+        futures.add(Future(() async {
+          try {
+            var response7 = await Api().getDatosPuntosControl(currentCuenta, currentIdTienda);
+            if (response7.statusCode == 200) {
+              if (mounted) {
+                setState(() {
+                  datadpc = response7.body;
+                  datosPuntosControl = jsonDecode(datadpc);
+                  datosPuntosControlList = datosPuntosControl ?? [];
+                  total_registros_control = (datosPuntosControlList[0]['total_registros_control'] ?? 0).toString();
+                  total_registros_control_join = (datosPuntosControlList[0]['total_registros_control_join'] ?? 0).toString();
+                  avance_porcentaje_dpc = (datosPuntosControlList[0]['avance_porcentaje'] ?? 0).toStringAsFixed(2);
+                });
+              }
+            }
+          } catch (e) {
+            print("Error puntos control: $e");
+          }
+        }));
+      }
+
+      // 10. Exhibiciones (Condicional)
+      if (hasModule('exhibiciones')) {
+        futures.add(Future(() async {
+          try {
+            var response8 = await Api().getDatosExhibicion(currentCuenta, currentIdTienda);
+            if (response8.statusCode == 200) {
+              if (mounted) {
+                setState(() {
+                  datade = response8.body;
+                  datosExhibicion = jsonDecode(datade);
+                  datosExhibicionList = datosExhibicion ?? [];
+                  total_objetivo_de = (datosExhibicionList[0]['total_objetivo'] ?? 0).toString();
+                  total_ejecutado_de = (datosExhibicionList[0]['total_ejecutado'] ?? 0).toString();
+                  avance_porcentaje_de = (datosExhibicionList[0]['avance_porcentaje'] ?? 0).toStringAsFixed(2);
+                });
+              }
+            }
+          } catch (e) {
+            print("Error exhibiciones: $e");
+          }
+        }));
+      }
+
+      // 11. Lineal (Condicional)
+      if (hasModule('lineal')) {
+        futures.add(Future(() async {
+          try {
+            var response9 = await Api().getDatosLineal(currentCuenta, currentIdTienda);
+            if (response9.statusCode == 200) {
+              if (mounted) {
+                setState(() {
+                  datadl = response9.body;
+                  datosLineal = jsonDecode(datadl);
+                  datosLinealList = datosLineal ?? [];
+                  total_objetivo_dl = (datosLinealList[0]['total_objetivo'] ?? 0).toString();
+                  total_ejecutado_dl = (datosLinealList[0]['total_ejecutado'] ?? 0).toString();
+                  avance_porcentaje_dl = (datosLinealList[0]['avance_porcentaje'] ?? 0).toStringAsFixed(2);
+                });
+              }
+            }
+          } catch (e) {
+            print("Error lineal: $e");
+          }
+        }));
+      }
+
+      // 12. SO (Condicional)
+      if (hasModule('so')) {
+        futures.add(Future(() async {
+          try {
+            int numeroInt = int.tryParse(currentNumero) ?? 0;
+            var response10 = await Api().getDatosSo(currentCuenta, currentCadena, numeroInt);
+            if (response10.statusCode == 200) {
+              if (mounted) {
+                setState(() {
+                  dataso = response10.body;
+                  datosSo = jsonDecode(dataso);
+                  datosSoList = datosSo ?? [];
+                  porcentaje_avance_so = (datosSo[0]['porcentaje_avance'] ?? 0).toStringAsFixed(2);
+                });
+              }
+            }
+          } catch (e) {
+            print("Error SO: $e");
+          }
+        }));
+      }
+
+      await Future.wait(futures);
+
+    } catch (e) {
+      print("Error general en getData: $e");
+    } finally {
+      if (mounted) {
         setState(() {
-          fecha_cadena = DateFormat('dd-MM-yyyy').format(fechaF);
+          _isLoading = false;
         });
-        print("Esta es la fecha $fecha_cadena");
-      } else {
-        print(responsefc.statusCode);
       }
-    } catch (e) {
-      print("Error de conexión: $e");
-    }
-
-    try {
-      var response = await Api().getValoresTabla(cuenta, "tiendas");
-      if (response.statusCode == 200) {
-        print("Entro en response 200");
-        String respuesta = response.body;
-        setState(() {
-          tiendas2 = jsonDecode(respuesta);
-        });
-        print(tiendas2[0]["tienda"]);
-      } else {
-        print(response.statusCode);
-      }
-    } catch (e) {
-      print("Error de conexión: $e");
-    }
-
-    try {
-      var response = await Api().getUltimaVisita(cuenta, idTienda);
-      if (response.statusCode == 200) {
-        datauv = response.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            ultimaVisita = jsonDecode(datauv);
-            ultimaVisitaList = ultimaVisita ?? "[]";
-
-            if (ultimaVisitaList.isNotEmpty) {
-              // fechaInicial = ultimaVisita[0]['fecha_i'];
-              DateTime fechaF =
-                  DateTime.parse(ultimaVisita[0]['fecha_i']).toLocal();
-              DateTime nuevaFechaF = fechaF.add(const Duration(hours: -2));
-              // String fechaFormateada = DateFormat('dd-MM-yyyy HH:mm:ss').format(nuevaFechaF);
-              fechaInicial =
-                  DateFormat('dd-MM-yyyy HH:mm:ss').format(nuevaFechaF);
-              userCeys = ultimaVisita[0]['userCeys'] ?? "";
-              perfil = ultimaVisita[0]['perfil'];
-              nombreUsuario = ultimaVisita[0]['nombre_usuario'];
-            }
-          });
-        }
-        print(ultimaVisita);
-        print("Este es el otro");
-        print(ultimaVisitaList);
-      } else {
-        print(response.statusCode);
-      }
-    } catch (e) {
-      print("Error de conexión: $e");
-    }
-
-    try {
-      var response2 = await Api().getTotalVisitas(cuenta, idTienda);
-      if (response2.statusCode == 200) {
-        datatv = response2.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            totalVisitas = jsonDecode(datatv);
-            totalVisitasList = totalVisitas ?? "[]";
-
-            if (totalVisitasList.isNotEmpty) {
-              totalvis = totalVisitasList[0]['total'].toString();
-            }
-          });
-          print(totalvis);
-          print("Si lo mostro?");
-        }
-      } else {
-        print(response2.statusCode);
-      }
-    } catch (e) {
-      print("Error de conexión: $e");
-    }
-
-    try {
-      var response3 = await Api().getEstadiaTienda(cuenta, idTienda);
-      if (response3.statusCode == 200) {
-        dataet = response3.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            estadiaTienda = jsonDecode(dataet);
-            estadiaTiendaList = estadiaTienda ?? "[]";
-
-            if (estadiaTiendaList.isNotEmpty) {
-              total_horas_et = estadiaTiendaList[0]['total_horas'];
-            }
-          });
-        }
-      } else {
-        print(response3.statusCode);
-      }
-    } catch (e) {
-      print("Error de conexión: $e");
-    }
-
-    try {
-      var response4 = await Api().getTotalEstadia(cuenta, idTienda);
-      if (response4.statusCode == 200) {
-        datate = response4.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            totalEstadia = jsonDecode(datate);
-            totalEstadiaList = totalEstadia ?? "[]";
-
-            if (totalEstadiaList.isNotEmpty) {
-              total_horas_te = totalEstadiaList[0]['total_horas'];
-            }
-          });
-        }
-      } else {
-        print(response4.statusCode);
-      }
-    } catch (e) {
-      print("Error de conexión: $e");
-    }
-
-    try {
-      var response5 = await Api().getTotalVisitasDetalle(cuenta, idTienda);
-      if (response5.statusCode == 200) {
-        datatvd = response5.body; //store response as string
-        if (this.mounted) {
-          setState(() {
-            totalVisitasd = jsonDecode(datatvd);
-            totalVisitasdList = totalVisitasd ?? "[]";
-            print("Que trae totalVisitasdList");
-            print(totalVisitasdList);
-            print(totalVisitasdList.length);
-          });
-        }
-      } else {
-        print(response5.statusCode);
-      }
-    } catch (e) {
-      print("Error de conexión: $e");
-    }
-    if (hasModule('cumplimiento_visitas') == true) {
-      try {
-        var response6 = await Api().getCumplimientoVisita(cuenta, idTienda);
-        if (response6.statusCode == 200) {
-          datacv = response6.body; //store response as string
-          if (this.mounted) {
-            setState(() {
-              cumplimientoVisita = jsonDecode(datacv);
-              cumplimientoVisitaList = cumplimientoVisita ?? "[]";
-              cumplimiento_visita =
-                  (cumplimientoVisitaList[0]['porcentaje_cumplimiento'] ?? 0)
-                      .toStringAsFixed(2);
-            });
-          }
-        } else {
-          print(response6.statusCode);
-        }
-      } catch (e) {
-        print("Error de conexión: $e");
-      }
-    }
-
-    if (hasModule('puntos_control') == true) {
-      try {
-        var response7 = await Api().getDatosPuntosControl(cuenta, idTienda);
-        if (response7.statusCode == 200) {
-          datadpc = response7.body; //store response as string
-          if (this.mounted) {
-            setState(() {
-              datosPuntosControl = jsonDecode(datadpc);
-              datosPuntosControlList = datosPuntosControl ?? "[]";
-              total_registros_control =
-                  (datosPuntosControlList[0]['total_registros_control'] ?? 0)
-                      .toString();
-              total_registros_control_join = (datosPuntosControlList[0]
-                          ['total_registros_control_join'] ??
-                      0)
-                  .toString();
-              avance_porcentaje_dpc =
-                  (datosPuntosControlList[0]['avance_porcentaje'] ?? 0)
-                      .toStringAsFixed(2);
-            });
-          }
-        } else {
-          print(response7.statusCode);
-        }
-      } catch (e) {
-        print("Error de conexión: $e");
-      }
-    }
-
-    if (hasModule('exhibiciones') == true) {
-      try {
-        var response8 = await Api().getDatosExhibicion(cuenta, idTienda);
-        if (response8.statusCode == 200) {
-          datade = response8.body; //store response as string
-          if (this.mounted) {
-            setState(() {
-              datosExhibicion = jsonDecode(datade);
-              datosExhibicionList = datosExhibicion ?? "[]";
-              total_objetivo_de =
-                  (datosExhibicionList[0]['total_objetivo'] ?? 0).toString();
-              total_ejecutado_de =
-                  (datosExhibicionList[0]['total_ejecutado'] ?? 0).toString();
-              avance_porcentaje_de =
-                  (datosExhibicionList[0]['avance_porcentaje'] ?? 0)
-                      .toStringAsFixed(2);
-            });
-          }
-        } else {
-          print(response8.statusCode);
-        }
-      } catch (e) {
-        print("Error de conexión: $e");
-      }
-    }
-
-    if (hasModule('lineal') == true) {
-      try {
-        var response9 = await Api().getDatosLineal(cuenta, idTienda);
-        if (response9.statusCode == 200) {
-          datadl = response9.body; //store response as string
-          if (this.mounted) {
-            setState(() {
-              datosLineal = jsonDecode(datadl);
-              datosLinealList = datosLineal ?? "[]";
-              total_objetivo_dl =
-                  (datosLinealList[0]['total_objetivo'] ?? 0).toString();
-              total_ejecutado_dl =
-                  (datosLinealList[0]['total_ejecutado'] ?? 0).toString();
-              avance_porcentaje_dl =
-                  (datosLinealList[0]['avance_porcentaje'] ?? 0)
-                      .toStringAsFixed(2);
-            });
-          }
-        } else {
-          print(response9.statusCode);
-        }
-      } catch (e) {
-        print("Error de conexión: $e");
-      }
-    }
-
-    if (hasModule('so') == true) {
-      try {
-        var response10 =
-            await Api().getDatosSo(cuenta, cadena, int.parse(numero));
-        if (response10.statusCode == 200) {
-          dataso = response10.body; //store response as string
-          if (this.mounted) {
-            setState(() {
-              datosSo = jsonDecode(dataso);
-              datosSoList = datosSo ?? "[]";
-              porcentaje_avance_so =
-                  (datosSo[0]['porcentaje_avance'] ?? 0).toStringAsFixed(2);
-            });
-          }
-        } else {
-          print(response10.statusCode);
-        }
-      } catch (e) {
-        print("Error de conexión: $e");
-      }
-    }
-
-    // Navigator.of(context).pop();
-    if (mounted) {
-      // Cierra el diálogo asegurándote de usar el rootNavigator
-      Navigator.of(context, rootNavigator: true).pop();
     }
   }
 
@@ -606,10 +576,8 @@ class _MyHomePageState extends State<HomeScreen> {
   }
 
   void _onRefresh() async {
-    // monitor network fetch
-    getData();
-    // if failed,use refreshFailed()
-    _refreshController.refreshCompleted();
+    getData(showLoading: false);
+    // _refreshController.refreshCompleted(); // Not using SmartRefresher anymore
   }
 
   @override
@@ -620,20 +588,8 @@ class _MyHomePageState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final modules = context.watch<ModulesProvider>();
-
-    // print("Vamos a ver que trae modules en widget");
-    // print(availableModules);
-    // print(initialized);
-    // print(hasModule("SO"));
-
-    // // 1️⃣ Mientras carga persistencia
-    // if (!initialized) {
-    //   return const Scaffold(
-    //     body: Center(child: CircularProgressIndicator()),
-    //   );
-    // }
-
+    // Check if initialized
+    
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
@@ -642,1535 +598,836 @@ class _MyHomePageState extends State<HomeScreen> {
           onLogout: logout,
           availableModules: availableModules,
         ),
-        body: SmartRefresher(
-          header: const WaterDropMaterialHeader(
-            color: Color.fromRGBO(6, 0, 36, 1),
-            backgroundColor: Color(0xff007DA4),
-          ),
-          onRefresh: _onRefresh,
-          controller: _refreshController,
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height,
-              ),
-              child: Column(
-                children: <Widget>[
-                  Container(
-                    color: const Color(0xff060024),
-                    padding: const EdgeInsets.only(
-                        top: 30, left: 20, right: 20, bottom: 30),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Builder(builder: (context) {
-                          return GestureDetector(
-                            onTap: () {
-                              Scaffold.of(context).openDrawer();
-                            },
-                            child: Image.asset(
-                              "assets/logo_modulo.png",
-                              scale: 5,
-                            ),
-                          );
-                        }),
-                        Container(
-                          margin: const EdgeInsets.only(left: 10),
-                          child: const Text(
-                            "Visita",
-                            style: TextStyle(
-                                fontFamily: "Montserrat",
-                                color: Colors.white,
-                                letterSpacing: 3,
-                                fontSize: 22),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // const Divider(
-                  //   color: Color(0xff007DA4)Accent,
-                  //   thickness: 1,
-                  // ),
-                  Column(
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                Container(
+                  color: const Color(0xff060024),
+                  padding: const EdgeInsets.only(
+                      top: 40, left: 20, right: 20, bottom: 20),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
-                        height: 20,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(5),
-                        width: 150,
-                        decoration: BoxDecoration(
-                          color: const Color(0xff007DA4),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'TIENDAS',
-                            style: TextStyle(
-                              fontFamily: "Montserrat",
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Center(
-                        child: Column(
-                          children: [
-                            const Text("Geolocalización",
-                                style: TextStyle(
-                                  letterSpacing: 1,
-                                  fontFamily: "Montserrat",
-                                )),
-                            Switch(
-                              value: _isSwitched,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isSwitched = value;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(5)),
-                          border: Border.all(
-                              color: const Color(0xff007DA4),
-                              width: 2), // Color del borde
-                        ),
-                        child: SearchChoices.single(
-                          dropDownDialogPadding: const EdgeInsets.all(10),
-                          underline: Container(),
-                          clearIcon:
-                              const Icon(Icons.close, color: Color(0xff060024)),
-                          iconEnabledColor: const Color(0xff060024),
-                          futureSearchFn: (String? searchQuery,
-                              String? selectedItem,
-                              bool? sortedBy,
-                              List<Tuple2<String, String>>? searchList,
-                              int? maxLength) async {
-                            return await _obtenerTiendas(searchQuery,
-                                selectedItem, sortedBy, searchList, maxLength);
-                          },
-                          value: selectedValueSingleDialog,
-                          // hint: "Tiendas",
-                          searchHint: "Selecciona una tienda",
-                          onChanged: (value) {
-                            setState(() {
-                              var tiendasep = value.split("--");
-                              selectedValueSingleDialog = tiendasep[1] ?? value;
-                              _tienda = value;
-                            });
-                          },
-                          isExpanded: true,
-                        ),
-                      ),
-                      Container(
-                        width: 200,
-                        padding: const EdgeInsets.all(5),
-                        margin: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color.fromRGBO(6, 0, 36, 1),
-                          border: Border.all(color: Colors.white, width: 2),
-                          borderRadius: BorderRadius.circular(15.0),
-                        ),
-                        child: GestureDetector(
+                      Builder(builder: (context) {
+                        return GestureDetector(
                           onTap: () {
-                            setTienda(_tienda);
+                            Scaffold.of(context).openDrawer();
                           },
-                          child: Container(
-                            padding: const EdgeInsets.all(5),
-                            alignment: Alignment.center,
-                            color: Colors.transparent,
-                            child: const Text(
-                              "VER DETALLES",
-                              style: TextStyle(
-                                fontFamily: "Montserrat",
-                                fontSize: 16.0,
-                                color: Colors.white,
-                              ),
-                            ),
+                          child: Image.asset(
+                            "assets/logo_modulo.png",
+                            height: 35,
                           ),
-                        ),
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        );
+                      }),
+                      Expanded(child: Container()),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(
-                            // Envuelve el primer column en un Expanded
-                            child: Column(
+                          Text(
+                            saludo,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontFamily: "Montserrat"),
+                          ),
+                          Text(
+                            nombreUsuario,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontFamily: "Montserrat",
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      _onRefresh();
+                    },
+                    color: const Color(0xff007DA4),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 20),
+                          
+                          // Premium Geolocator Switch
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.all(5),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                          color: const Color(0xff007DA4),
-                                          border: Border.all(
-                                              color: const Color(0xff007DA4),
-                                              width: 2),
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(5),
-                                            bottomLeft: Radius.circular(5),
-                                          )),
-                                      child: const Text(
-                                        "Formato:",
+                                        color: const Color(0xff007DA4).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.location_on, color: Color(0xff007DA4)),
+                                    ),
+                                    const SizedBox(width: 15),
+                                    const Text("Geolocalización",
                                         style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.white,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      // Usar Expanded aquí para que el texto largo no cause problemas
-                                      child: Container(
-                                        padding: const EdgeInsets.all(5),
-                                        decoration: BoxDecoration(
-                                            border: Border.all(
-                                                color: const Color(0xff007DA4),
-                                                width: 2),
-                                            borderRadius:
-                                                const BorderRadius.only(
-                                              topRight: Radius.circular(5),
-                                              bottomRight: Radius.circular(5),
-                                            )),
-                                        child: Text(
-                                          "$formato $numero",
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                              fontFamily: "Montserrat",
-                                              color: Colors.black,
-                                              fontSize: 16),
-                                          overflow: TextOverflow
-                                              .ellipsis, // Para manejar textos largos
-                                        ),
-                                      ),
-                                    ),
+                                          fontFamily: "Montserrat",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Color(0xff060024),
+                                        )),
                                   ],
                                 ),
-                                const SizedBox(
-                                    height:
-                                        20), // Usar SizedBox en lugar de Container para mejor rendimiento
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                          color: const Color(0xff007DA4),
-                                          border: Border.all(
-                                              color: const Color(0xff007DA4),
-                                              width: 2),
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(5),
-                                            bottomLeft: Radius.circular(5),
-                                          )),
-                                      child: const Text(
-                                        "Tienda:",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.white,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      // Usar Expanded aquí también
-                                      child: Container(
-                                        padding: const EdgeInsets.all(5),
-                                        decoration: BoxDecoration(
-                                            border: Border.all(
-                                                color: const Color(0xff007DA4),
-                                                width: 2),
-                                            borderRadius:
-                                                const BorderRadius.only(
-                                              topRight: Radius.circular(5),
-                                              bottomRight: Radius.circular(5),
-                                            )),
-                                        child: Text(
-                                          tienda,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                              fontFamily: "Montserrat",
-                                              color: Colors.black,
-                                              fontSize: 16),
-                                          overflow: TextOverflow
-                                              .ellipsis, // Para manejar textos largos
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                Switch(
+                                  value: _isSwitched,
+                                  activeColor: const Color(0xff007DA4),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isSwitched = value;
+                                    });
+                                  },
                                 ),
-                                const SizedBox(
-                                    height:
-                                        20), // Usar SizedBox en lugar de Container
                               ],
                             ),
                           ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                    color: const Color(0xff007DA4),
-                                    border: Border.all(
-                                        color: const Color(0xff007DA4),
-                                        width: 2),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(5),
-                                      topRight: Radius.circular(5),
-                                    )),
-                                child: const Text(
-                                  "S.O al dia:",
-                                  style: TextStyle(
-                                      fontFamily: "Montserrat",
-                                      color: Colors.white,
-                                      fontSize: 16),
+                          
+                          const SizedBox(height: 15),
+                          
+                          // Premium Store Dropdown
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: const Color(0xff007DA4).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: SearchChoices.single(
+                              dropDownDialogPadding: const EdgeInsets.all(10),
+                              underline: Container(), // Remove default underline
+                              displayClearIcon: false, // Cleaner look
+                              icon: const Icon(Icons.arrow_drop_down_circle, color: Color(0xff007DA4)),
+                              isExpanded: true,
+                              hint: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Text("Selecciona una tienda", style: TextStyle(fontFamily: "Montserrat", fontSize: 14)),
+                              ),
+                              style: const TextStyle(
+                                fontFamily: "Montserrat",
+                                fontSize: 16,
+                                color: Color(0xff060024),
+                                fontWeight: FontWeight.bold
+                              ),
+                              futureSearchFn: (String? searchQuery,
+                                  String? selectedItem,
+                                  bool? sortedBy,
+                                  List<Tuple2<String, String>>? searchList,
+                                  int? maxLength) async {
+                                return await _obtenerTiendas(searchQuery,
+                                    selectedItem, sortedBy, searchList, maxLength);
+                              },
+                              value: selectedValueSingleDialog,
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value != null) {
+                                    var tiendasep = value.split("--");
+                                    selectedValueSingleDialog =
+                                        tiendasep.length > 1 ? tiendasep[1] : value;
+                                    _tienda = value;
+                                  }
+                                });
+                              },
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 15),
+                          
+                          // Premium Ver Detalles Button
+                          GestureDetector(
+                            onTap: () {
+                              if (_tienda.isNotEmpty) {
+                                setTienda(_tienda);
+                              }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 20),
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xff060024), Color(0xff007DA4)],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(15.0),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xff007DA4).withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                "VER DETALLES",
+                                style: TextStyle(
+                                  fontFamily: "Montserrat",
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                  color: Colors.white,
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: const Color(0xff007DA4),
-                                        width: 2),
-                                    borderRadius: const BorderRadius.only(
-                                      bottomLeft: Radius.circular(5),
-                                      bottomRight: Radius.circular(5),
-                                    )),
-                                child: Text(
-                                  "$fecha_cadena",
-                                  style: const TextStyle(
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 20),
+                          _buildPremiumInfoCard(
+                            title: "Información de Tienda",
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text("Formato:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  Expanded(
+                                      child: Text("$formato $numero",
+                                          textAlign: TextAlign.end,
+                                          style: const TextStyle(
+                                              fontFamily: "Montserrat",
+                                              fontSize: 16))),
+                                ],
+                              ),
+                              const Divider(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text("Tienda:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  Expanded(
+                                      child: Text(tienda,
+                                          textAlign: TextAlign.end,
+                                          style: const TextStyle(
+                                              fontFamily: "Montserrat",
+                                              fontSize: 16))),
+                                ],
+                              ),
+                              const Divider(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text("S.O al día:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  Text("$fecha_cadena",
+                                      style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontSize: 16)),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _buildPremiumInfoCard(
+                            title: "Detalle de Visita",
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text("Última visita:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  Text(fechaInicial,
+                                      style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontSize: 16)),
+                                ],
+                              ),
+                              const Divider(height: 20),
+                              const Text("Visitada por:",
+                                  style: TextStyle(
                                       fontFamily: "Montserrat",
-                                      color: Colors.black,
-                                      fontSize: 16),
-                                  overflow: TextOverflow
-                                      .ellipsis, // Para manejar textos largos si es necesario
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16)),
+                              const SizedBox(height: 6),
+                              Center(
+                                child: Text(perfil,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16))),
+                              Center(
+                                child: Text(nombreUsuario,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        fontSize: 16))),
+                              Center(
+                                child: Text(userCeys,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontFamily: "Montserrat",
+                                        fontSize: 16))),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _buildPremiumInfoCard(
+                            title: "Resumen de Actividad",
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text("Permanencia en tienda:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  Text(total_horas_et,
+                                      style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontSize: 16)),
+                                ],
+                              ),
+                              const Divider(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text("Total visitas mes:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  Text(totalvis,
+                                      style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontSize: 16)),
+                                ],
+                              ),
+                              const Divider(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text("Tiempo total mes:",
+                                      style: TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  Text(total_horas_te,
+                                      style: const TextStyle(
+                                          fontFamily: "Montserrat",
+                                          fontSize: 16)),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          if (hasModule('so') || 
+                              hasModule('cumplimiento_visitas') || 
+                              hasModule('puntos_control') || 
+                              hasModule('exhibiciones') || 
+                              hasModule('lineal'))
+                          _buildPremiumInfoCard(
+                            title: "Auditoría en Tienda",
+                            children: [
+                              
+                              if (hasModule('so')) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 5),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      const Expanded(
+                                        flex: 4,
+                                        child: Text(
+                                          "SO:",
+                                          style: TextStyle(
+                                              fontFamily: "Montserrat",
+                                              fontSize: 16),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 6,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "$porcentaje_avance_so%",
+                                              style: const TextStyle(
+                                                  fontFamily: "Montserrat",
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16),
+                                            ),
+                                            Text(
+                                              "${(double.parse(porcentaje_avance_so.isEmpty ? "0" : porcentaje_avance_so) * 0.8).toStringAsFixed(2)}%",
+                                              style: const TextStyle(
+                                                  fontFamily: "Montserrat",
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.grey,
+                                                  fontSize: 14),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(),
+                              ],
+
+                              if (hasModule('cumplimiento_visitas')) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 5),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      const Expanded(
+                                        flex: 6,
+                                        child: Text(
+                                          "Cumplimiento de visita:",
+                                          style: TextStyle(
+                                              fontFamily: "Montserrat",
+                                              fontSize: 16),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 4,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "$cumplimiento_visita%",
+                                              style: const TextStyle(
+                                                  fontFamily: "Montserrat",
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16),
+                                            ),
+                                            const Text(
+                                              "",
+                                              style: TextStyle(
+                                                  fontFamily: "Montserrat",
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(),
+                              ],
+
+                              if (hasModule('puntos_control')) ...[
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isVisible = !_isVisible;
+                                    });
+                                  },
+                                  child: Container(
+                                    color: Colors.transparent, // Hit test behavior
+                                    padding: const EdgeInsets.symmetric(vertical: 5),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          flex: 6,
+                                          child: Row(
+                                            children: [
+                                              const Flexible(
+                                                child: Text(
+                                                  "Puntos de control:",
+                                                  style: TextStyle(
+                                                      fontFamily: "Montserrat",
+                                                      fontSize: 16),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              Icon(
+                                                _isVisible ? Icons.expand_less : Icons.expand_more,
+                                                color: const Color(0xff007DA4),
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 4,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                "$avance_porcentaje_dpc%",
+                                                style: const TextStyle(
+                                                    fontFamily: "Montserrat",
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16),
+                                              ),
+                                              Text(
+                                                "${(double.parse(avance_porcentaje_dpc.isEmpty ? "0" : avance_porcentaje_dpc) * 0.06).toStringAsFixed(2)}%",
+                                                style: const TextStyle(
+                                                    fontFamily: "Montserrat",
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey,
+                                                    fontSize: 14),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                AnimatedCrossFade(
+                                  firstChild: Container(),
+                                  secondChild: Container(
+                                    color: const Color(0xfff5f5f5),
+                                    padding: const EdgeInsets.all(10),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text("Objetivo:", style: TextStyle(fontFamily: "Montserrat")),
+                                            Text(total_registros_control, style: const TextStyle(fontFamily: "Montserrat", fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text("Ejecutado:", style: TextStyle(fontFamily: "Montserrat")),
+                                            Text(total_registros_control_join, style: const TextStyle(fontFamily: "Montserrat", fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  crossFadeState: _isVisible ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                                  duration: const Duration(milliseconds: 300),
+                                ),
+                                const Divider(),
+                              ],
+
+                              if (hasModule('exhibiciones')) ...[
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isVisible_de = !_isVisible_de;
+                                    });
+                                  },
+                                  child: Container(
+                                    color: Colors.transparent,
+                                    padding: const EdgeInsets.symmetric(vertical: 5),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          flex: 5,
+                                          child: Row(
+                                            children: [
+                                              const Flexible(
+                                                child: Text(
+                                                  "Exhibiciones:",
+                                                  style: TextStyle(
+                                                      fontFamily: "Montserrat",
+                                                      fontSize: 16),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              Icon(
+                                                _isVisible_de ? Icons.expand_less : Icons.expand_more,
+                                                color: const Color(0xff007DA4),
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 5,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                "$avance_porcentaje_de%",
+                                                style: const TextStyle(
+                                                    fontFamily: "Montserrat",
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16),
+                                              ),
+                                              Text(
+                                                "${(double.parse(avance_porcentaje_de.isEmpty ? "0" : avance_porcentaje_de) * 0.1).toStringAsFixed(2)}%",
+                                                style: const TextStyle(
+                                                    fontFamily: "Montserrat",
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey,
+                                                    fontSize: 14),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                AnimatedCrossFade(
+                                  firstChild: Container(),
+                                  secondChild: Container(
+                                    color: const Color(0xfff5f5f5),
+                                    padding: const EdgeInsets.all(10),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text("Objetivo:", style: TextStyle(fontFamily: "Montserrat")),
+                                            Text(total_objetivo_de, style: const TextStyle(fontFamily: "Montserrat", fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text("Ejecutado:", style: TextStyle(fontFamily: "Montserrat")),
+                                            Text(total_ejecutado_de, style: const TextStyle(fontFamily: "Montserrat", fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  crossFadeState: _isVisible_de ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                                  duration: const Duration(milliseconds: 300),
+                                ),
+                                const Divider(),
+                              ],
+
+                              if (hasModule('lineal')) ...[
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isVisible_dl = !_isVisible_dl;
+                                    });
+                                  },
+                                  child: Container(
+                                    color: Colors.transparent,
+                                    padding: const EdgeInsets.symmetric(vertical: 5),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          flex: 4,
+                                          child: Row(
+                                            children: [
+                                              const Flexible(
+                                                child: Text(
+                                                  "Lineal:",
+                                                  style: TextStyle(
+                                                      fontFamily: "Montserrat",
+                                                      fontSize: 16),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              Icon(
+                                                _isVisible_dl ? Icons.expand_less : Icons.expand_more,
+                                                color: const Color(0xff007DA4),
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 6,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                "$avance_porcentaje_dl%",
+                                                style: const TextStyle(
+                                                    fontFamily: "Montserrat",
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16),
+                                              ),
+                                              Text(
+                                                "${(double.parse(avance_porcentaje_dl.isEmpty ? "0" : avance_porcentaje_dl) * 0.04).toStringAsFixed(2)}%",
+                                                style: const TextStyle(
+                                                    fontFamily: "Montserrat",
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey,
+                                                    fontSize: 14),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                AnimatedCrossFade(
+                                  firstChild: Container(),
+                                  secondChild: Container(
+                                    color: const Color(0xfff5f5f5),
+                                    padding: const EdgeInsets.all(10),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text("Objetivo:", style: TextStyle(fontFamily: "Montserrat")),
+                                            Text(total_objetivo_dl, style: const TextStyle(fontFamily: "Montserrat", fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text("Ejecutado:", style: TextStyle(fontFamily: "Montserrat")),
+                                            Text(total_ejecutado_dl, style: const TextStyle(fontFamily: "Montserrat", fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  crossFadeState: _isVisible_dl ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                                  duration: const Duration(milliseconds: 300),
+                                ),
+                                const Divider(),
+                              ],
+
+                              // Total Avance
+                              Container(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        "Avance:",
+                                        style: TextStyle(
+                                            fontFamily: "Montserrat",
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                            color: Color(0xff007DA4)),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            "${((double.parse(porcentaje_avance_so.isEmpty ? "0" : porcentaje_avance_so) * 0.8) + (double.parse(avance_porcentaje_dpc.isEmpty ? "0" : avance_porcentaje_dpc) * 0.06) + (double.parse(avance_porcentaje_de.isEmpty ? "0" : avance_porcentaje_de) * 0.1) + (double.parse(avance_porcentaje_dl.isEmpty ? "0" : avance_porcentaje_dl) * 0.04)).toStringAsFixed(2)}%",
+                                            style: const TextStyle(
+                                                fontFamily: "Montserrat",
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 18),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
+                          
+                          const SizedBox(height: 10),
+                          const Divider(
+                            color: Color(0xff007DA4),
+                            thickness: 1,
+                          ),
+                          const SizedBox(height: 10),
+                          _buildVisitasTable(),
+                          const SizedBox(height: 20),
                         ],
                       ),
-                      const Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10, right: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Ultima visita:",
-                              style: TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.black,
-                                  fontSize: 16),
-                            ),
-                            Text(
-                              fechaInicial,
-                              style: const TextStyle(
-                                  fontFamily: "Montserrat",
-                                  color: Colors.black,
-                                  fontSize: 16),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Divider(
-                        color: Color(0xff007DA4),
-                        thickness: 1,
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      Container(
-                        alignment: Alignment.centerLeft,
-                        margin: const EdgeInsets.only(left: 10),
-                        child: const Text(
-                          "Visitada por:",
-                          style: TextStyle(
-                              fontFamily: "Montserrat",
-                              color: Colors.black,
-                              fontSize: 16),
-                        ),
-                      ),
-                      Container(
-                        alignment: Alignment.centerLeft,
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Text(
-                          perfil,
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(
-                            fontFamily: "Montserrat",
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        alignment: Alignment.centerLeft,
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Text(
-                          nombreUsuario,
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(
-                            fontFamily: "Montserrat",
-                            color: Colors.black,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        alignment: Alignment.centerLeft,
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Text(
-                          userCeys,
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(
-                            fontFamily: "Montserrat",
-                            color: Colors.black,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      const Divider(
-                        color: Color(0xff007DA4),
-                        thickness: 1,
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      // Container(
-                      //   margin: const EdgeInsets.only(left: 10),
-                      //   child: Row(
-                      //     mainAxisAlignment: MainAxisAlignment.start,
-                      //     children: [
-                      //       const Expanded(
-                      //         child: Text(
-                      //           "SO:",
-                      //           style: TextStyle(
-                      //               fontFamily: "Montserrat",
-                      //               color: Colors.black,
-                      //               fontSize: 16),
-                      //         ),
-                      //       ),
-                      //       Expanded(
-                      //         child: Text(
-                      //           "$porcentaje_avance_so%",
-                      //           style: const TextStyle(
-                      //               fontFamily: "Montserrat",
-                      //               fontWeight: FontWeight.bold,
-                      //               color: Colors.black,
-                      //               fontSize: 16),
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-                      // Container(
-                      //   margin: const EdgeInsets.only(left: 10),
-                      //   child: Row(
-                      //     mainAxisAlignment: MainAxisAlignment.start,
-                      //     children: [
-                      //       const Expanded(
-                      //         child: Text(
-                      //           "Cumplimiento de visita:",
-                      //           style: TextStyle(
-                      //               fontFamily: "Montserrat",
-                      //               color: Colors.black,
-                      //               fontSize: 16),
-                      //         ),
-                      //       ),
-                      //       Expanded(
-                      //         child: Text(
-                      //           "$cumplimiento_visita%",
-                      //           style: const TextStyle(
-                      //               fontFamily: "Montserrat",
-                      //               fontWeight: FontWeight.bold,
-                      //               color: Colors.black,
-                      //               fontSize: 16),
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "Permanencia en tienda:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                total_horas_et,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "Total de visitas este mes:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                totalvis,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "Tiempo total de permanencia este mes:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                total_horas_te,
-                                style: const TextStyle(
-                                    fontFamily: "Montserrat",
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        height: 20,
-                      ),
-                      const Divider(
-                        color: Color(0xff007DA4),
-                        thickness: 1,
-                      ),
-                      Container(
-                        height: 10,
-                      ),
-                      // Container(
-                      //   margin: const EdgeInsets.only(left: 10),
-                      //   child: Row(
-                      //     mainAxisAlignment: MainAxisAlignment.start,
-                      //     children: [
-                      //       const Expanded(
-                      //         child: Text(
-                      //           "Puntos de control:",
-                      //           style: TextStyle(
-                      //               fontFamily: "Montserrat",
-                      //               color: Colors.black,
-                      //               fontSize: 16),
-                      //         ),
-                      //       ),
-                      //       Expanded(
-                      //         child: Text(
-                      //           "$avance_porcentaje_dpc%",
-                      //           style: const TextStyle(
-                      //               fontFamily: "Montserrat",
-                      //               fontWeight: FontWeight.bold,
-                      //               color: Colors.black,
-                      //               fontSize: 16),
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-                      // Container(
-                      //   color: Color(0xffe6e6e6),
-                      //   padding: EdgeInsets.only(top:10, bottom: 10),
-                      //   child: Column(
-                      //     children: [
-                      //       Container(
-                      //         margin: const EdgeInsets.only(left: 10),
-                      //         child: Row(
-                      //           mainAxisAlignment: MainAxisAlignment.start,
-                      //           children: [
-                      //             const Expanded(
-                      //               child: Text(
-                      //                 "Objetivo:",
-                      //                 style: TextStyle(
-                      //                     fontFamily: "Montserrat",
-                      //                     color: Colors.black,
-                      //                     fontSize: 16),
-                      //               ),
-                      //             ),
-                      //             Expanded(
-                      //               child: Text(
-                      //                 total_registros_control,
-                      //                 style: const TextStyle(
-                      //                     fontFamily: "Montserrat",
-                      //                     fontWeight: FontWeight.bold,
-                      //                     color: Colors.black,
-                      //                     fontSize: 16),
-                      //               ),
-                      //             ),
-                      //           ],
-                      //         ),
-                      //       ),
-                      //       Container(
-                      //         margin: const EdgeInsets.only(left: 10),
-                      //         child: Row(
-                      //           mainAxisAlignment: MainAxisAlignment.start,
-                      //           children: [
-                      //             const Expanded(
-                      //               child: Text(
-                      //                 "Ejecutado:",
-                      //                 style: TextStyle(
-                      //                     fontFamily: "Montserrat",
-                      //                     color: Colors.black,
-                      //                     fontSize: 16),
-                      //               ),
-                      //             ),
-                      //             Expanded(
-                      //               child: Text(
-                      //                 total_registros_control_join,
-                      //                 style: const TextStyle(
-                      //                     fontFamily: "Montserrat",
-                      //                     fontWeight: FontWeight.bold,
-                      //                     color: Colors.black,
-                      //                     fontSize: 16),
-                      //               ),
-                      //             ),
-                      //           ],
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-
-                      hasModule('so')
-                          ? Container(
-                              margin: const EdgeInsets.only(left: 10),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      "SO:",
-                                      style: TextStyle(
-                                          fontFamily: "Montserrat",
-                                          color: Colors.black,
-                                          fontSize: 16),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          "$porcentaje_avance_so%",
-                                          style: const TextStyle(
-                                              fontFamily: "Montserrat",
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                              fontSize: 16),
-                                        ),
-                                        Text(
-                                          //"${(double.parse(porcentaje_avance_so) * 0.2).toStringAsFixed(2)}%",
-                                          "${(double.parse(porcentaje_avance_so) * 0.8).toStringAsFixed(2)}%",
-                                          style: const TextStyle(
-                                              fontFamily: "Montserrat",
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                              fontSize: 16),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Container(),
-                      hasModule('cumplimiento_visitas')
-                          ? Container(
-                              margin: const EdgeInsets.only(left: 10),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      "Cumplimiento de visita:",
-                                      style: TextStyle(
-                                          fontFamily: "Montserrat",
-                                          color: Colors.black,
-                                          fontSize: 16),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          "$cumplimiento_visita%",
-                                          style: const TextStyle(
-                                              fontFamily: "Montserrat",
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                              fontSize: 16),
-                                        ),
-                                        const Text(
-                                          // "${(double.parse(cumplimiento_visita) * 0.5).toStringAsFixed(2)}%",
-                                          "",
-                                          style: TextStyle(
-                                              fontFamily: "Montserrat",
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                              fontSize: 16),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Container(),
-
-                      hasModule('puntos_control')
-                          ? GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _isVisible = !_isVisible;
-                                });
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(left: 10),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        "Puntos de control:",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.black,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            "$avance_porcentaje_dpc%",
-                                            style: const TextStyle(
-                                                fontFamily: "Montserrat",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                                fontSize: 16),
-                                          ),
-                                          Text(
-                                            // "${(double.parse(avance_porcentaje_dpc) * 0.1).toStringAsFixed(2)}%",
-                                            "${(double.parse(avance_porcentaje_dpc) * 0.06).toStringAsFixed(2)}%",
-                                            style: const TextStyle(
-                                                fontFamily: "Montserrat",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                                fontSize: 16),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : Container(),
-                      AnimatedOpacity(
-                        opacity: _isVisible ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: _isVisible
-                            ? Container(
-                                color: const Color(0xffe6e6e6),
-                                padding:
-                                    const EdgeInsets.only(top: 10, bottom: 10),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 10),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          const Expanded(
-                                            child: Text(
-                                              "Objetivo:",
-                                              style: TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              total_registros_control,
-                                              style: const TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 10),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          const Expanded(
-                                            child: Text(
-                                              "Ejecutado:",
-                                              style: TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              total_registros_control_join,
-                                              style: const TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : Container(),
-                      ),
-
-                      hasModule('exhibiciones')
-                          ? GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _isVisible_de = !_isVisible_de;
-                                });
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(left: 10),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        "Exhibiciones:",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.black,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            "$avance_porcentaje_de%",
-                                            style: const TextStyle(
-                                                fontFamily: "Montserrat",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                                fontSize: 16),
-                                          ),
-                                          Text(
-                                            "${(double.parse(avance_porcentaje_de) * 0.1).toStringAsFixed(2)}%",
-                                            style: const TextStyle(
-                                                fontFamily: "Montserrat",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                                fontSize: 16),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : Container(),
-                      AnimatedOpacity(
-                        opacity: _isVisible_de ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: _isVisible_de
-                            ? Container(
-                                color: const Color(0xffe6e6e6),
-                                padding:
-                                    const EdgeInsets.only(top: 10, bottom: 10),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 10),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          const Expanded(
-                                            child: Text(
-                                              "Objetivo:",
-                                              style: TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              total_objetivo_de,
-                                              style: const TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 10),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          const Expanded(
-                                            child: Text(
-                                              "Ejecutado:",
-                                              style: TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              total_ejecutado_de,
-                                              style: const TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : Container(),
-                      ),
-
-                      hasModule('lineal')
-                          ? GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _isVisible_dl = !_isVisible_dl;
-                                });
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(left: 10),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        "Lineal:",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.black,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            "$avance_porcentaje_dl%",
-                                            style: const TextStyle(
-                                                fontFamily: "Montserrat",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                                fontSize: 16),
-                                          ),
-                                          Text(
-                                            // "${(double.parse(avance_porcentaje_dl) * 0.1).toStringAsFixed(2)}%",
-                                            "${(double.parse(avance_porcentaje_dl) * 0.04).toStringAsFixed(2)}%",
-                                            style: const TextStyle(
-                                                fontFamily: "Montserrat",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                                fontSize: 16),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : Container(),
-                      AnimatedOpacity(
-                        opacity: _isVisible_dl ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: _isVisible_dl
-                            ? Container(
-                                color: const Color(0xffe6e6e6),
-                                padding:
-                                    const EdgeInsets.only(top: 10, bottom: 10),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 10),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          const Expanded(
-                                            child: Text(
-                                              "Objetivo:",
-                                              style: TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              total_objetivo_dl,
-                                              style: const TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 10),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          const Expanded(
-                                            child: Text(
-                                              "Ejecutado:",
-                                              style: TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              total_ejecutado_dl,
-                                              style: const TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : Container(),
-                      ),
-
-                      Container(
-                        margin: const EdgeInsets.only(left: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                "Avance:",
-                                style: TextStyle(
-                                    fontFamily: "Montserrat",
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16),
-                              ),
-                            ),
-                            Expanded(
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "",
-                                    style: TextStyle(
-                                        fontFamily: "Montserrat",
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                  Text(
-                                    // "${((double.parse(cumplimiento_visita) * 0.5) + (double.parse(porcentaje_avance_so) * 0.2) + (double.parse(avance_porcentaje_dpc) * 0.1) + (double.parse(avance_porcentaje_de) * 0.1) + (double.parse(avance_porcentaje_dl) * 0.1)).toStringAsFixed(2)}%",
-                                    "${((double.parse(porcentaje_avance_so) * 0.8) + (double.parse(avance_porcentaje_dpc) * 0.06) + (double.parse(avance_porcentaje_de) * 0.1) + (double.parse(avance_porcentaje_dl) * 0.04)).toStringAsFixed(2)}%",
-                                    style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                        fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      Container(
-                        height: 10,
-                      ),
-                      const Divider(
-                        color: Color(0xff007DA4),
-                        thickness: 1,
-                      ),
-                      Container(
-                        height: 10,
-                      ),
-                      // Container(
-                      //   color: const Color(0xFFE6E6E6),
-                      //   child: Column(
-                      //     children: [
-                      Container(
-                        height: 10,
-                      ),
-                      totalVisitasdList.length > 0
-                          ? SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Container(
-                                margin: const EdgeInsets.all(10),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
-                                  children: [
-                                    // Container(
-                                    //   margin: EdgeInsets.all(5),
-                                    //   padding: const EdgeInsets.all(5),
-                                    //   decoration: BoxDecoration(
-                                    //       color: const Color(0xff007DA4),
-                                    //       border: Border.all(
-                                    //           color: const Color(0xff007DA4),
-                                    //           width: 2),
-                                    //       borderRadius: BorderRadius.circular(5)),
-                                    //   child: const Text(
-                                    //     "Evidencia",
-                                    //     style: TextStyle(
-                                    //         fontFamily: "Montserrat",
-                                    //         color: Colors.white,
-                                    //         fontSize: 16),
-                                    //   ),
-                                    // ),
-                                    Container(
-                                      margin: const EdgeInsets.all(5),
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                          color: const Color(0xff007DA4),
-                                          border: Border.all(
-                                              color: const Color(0xff007DA4),
-                                              width: 2),
-                                          borderRadius:
-                                              BorderRadius.circular(5)),
-                                      child: const Text(
-                                        "Evidencia",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.white,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: const EdgeInsets.all(5),
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                          color: const Color(0xff007DA4),
-                                          border: Border.all(
-                                              color: const Color(0xff007DA4),
-                                              width: 2),
-                                          borderRadius:
-                                              BorderRadius.circular(5)),
-                                      child: const Text(
-                                        "Visita",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.white,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: const EdgeInsets.all(5),
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                          color: const Color(0xff007DA4),
-                                          border: Border.all(
-                                              color: const Color(0xff007DA4),
-                                              width: 2),
-                                          borderRadius:
-                                              BorderRadius.circular(5)),
-                                      child: const Text(
-                                        "Tiempo",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.white,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: const EdgeInsets.all(5),
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                          color: const Color(0xff007DA4),
-                                          border: Border.all(
-                                              color: const Color(0xff007DA4),
-                                              width: 2),
-                                          borderRadius:
-                                              BorderRadius.circular(5)),
-                                      child: const Text(
-                                        "Quien la visito",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.white,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: const EdgeInsets.all(5),
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                          color: const Color(0xff007DA4),
-                                          border: Border.all(
-                                              color: const Color(0xff007DA4),
-                                              width: 2),
-                                          borderRadius:
-                                              BorderRadius.circular(5)),
-                                      child: const Text(
-                                        "Perfil",
-                                        style: TextStyle(
-                                            fontFamily: "Montserrat",
-                                            color: Colors.white,
-                                            fontSize: 16),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : Container(),
-                      // Container(
-                      //   margin: EdgeInsets.all(10),
-                      //   child: ListView.builder(
-                      //     physics: NeverScrollableScrollPhysics(),
-                      //     shrinkWrap: true,
-                      //     itemCount: totalVisitasdList == null
-                      //         ? 0
-                      //         : totalVisitasdList.length,
-                      //     itemBuilder: (BuildContext context, int index) {
-                      //       DateTime fechaFl =
-                      //           DateTime.parse(totalVisitasdList[index]['fecha_i'])
-                      //               .toLocal();
-                      //       DateTime nuevaFechaFl =
-                      //           fechaFl.add(const Duration(hours: -1));
-                      //       String fechasctring = DateFormat('dd-MM-yyyy\nHH:mm:ss')
-                      //           .format(nuevaFechaFl);
-
-                      //       print("PAsa aqui $index vecesS");
-                      //       return SingleChildScrollView(
-                      //         scrollDirection: Axis.vertical,
-                      //         child: Column(
-                      //           children: List.generate(totalVisitasdList.length,
-                      //               (index) {
-                      //             return SingleChildScrollView(
-                      //               scrollDirection: Axis.horizontal,
-                      //               child: Row(
-                      //                 mainAxisAlignment:
-                      //                     MainAxisAlignment.spaceAround,
-                      //                 verticalDirection: VerticalDirection.up,
-                      //                 children: [
-
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       fechasctring,
-                      //                       textAlign: TextAlign.center,
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       totalVisitasdList[index]
-                      //                           ['diferencia_tiempo'],
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       totalVisitasdList[index]['nombre_usuario'],
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                   Container(
-                      //                     margin: EdgeInsets.all(10),
-                      //                     child: Text(
-                      //                       totalVisitasdList[index]['perfil'],
-                      //                       style: const TextStyle(
-                      //                         fontFamily: "Montserrat",
-                      //                         color: Colors.black,
-                      //                         fontSize: 16,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                 ],
-                      //               ),
-                      //             );
-                      //           }
-                      //           ),
-                      //         ),
-                      //       );
-                      //     },
-                      //   ),
-                      // ),
-                      Container(
-                        margin: const EdgeInsets.all(10),
-                        child: ListView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: totalVisitasdList == null
-                              ? 0
-                              : totalVisitasdList.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            DateTime fechaFl = DateTime.parse(
-                                    totalVisitasdList[index]['fecha_i'])
-                                .toLocal();
-                            DateTime nuevaFechaFl =
-                                fechaFl.add(const Duration(hours: -1));
-                            String fechasctring =
-                                DateFormat('dd-MM-yyyy\nHH:mm:ss')
-                                    .format(nuevaFechaFl);
-
-                            return SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                verticalDirection: VerticalDirection.up,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => Dialog(
-                                          child: PhotoView(
-                                            imageProvider: NetworkImage(
-                                              "http://72.167.33.202" +
-                                                  totalVisitasdList[index]
-                                                      ['imgF'],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Image.network(
-                                      "http://72.167.33.202" +
-                                          totalVisitasdList[index]['imgF'],
-                                      width: 40,
-                                      height: 60,
-                                    ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      fechasctring,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      totalVisitasdList[index]
-                                          ['diferencia_tiempo'],
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      totalVisitasdList[index]
-                                          ['nombre_usuario'],
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    margin: const EdgeInsets.all(10),
-                                    child: Text(
-                                      totalVisitasdList[index]['perfil'],
-                                      style: const TextStyle(
-                                        fontFamily: "Montserrat",
-                                        color: Colors.black,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
+            if (_isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.5),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xff007DA4),
+                  ),
+                ),
+              ),
+          ],
         ),
-        bottomNavigationBar: Container(
-          // decoration: const BoxDecoration(
-          //   image: DecorationImage(
-          //     image: AssetImage('assets/fondo_1_1.png'),
-          //     fit: BoxFit.none,
-          //   ),
-          // ),
-          child: BottomNavigationBar(
-            backgroundColor: const Color(0xff060024),
-            items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: 'Inicio',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.open_in_new_rounded),
-                // label: 'Tiendas',
-                label: 'Login',
-              ),
-            ],
-            currentIndex: _selectedIndex,
-            selectedItemColor: Colors.white,
-            unselectedItemColor: Colors.grey,
-            onTap: (int index) {
-              switch (index) {
-                case 0:
-                  // only scroll to top when current index is selected.
-                  if (_selectedIndex == index) {
-                    print("Se selecciono home");
-                  }
-                  break;
-                case 1:
-                  showModal(context);
-                // logout();
-              }
-              setState(
-                () {
-                  _selectedIndex = index;
-                },
-              );
-            },
-          ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: const Color(0xff060024),
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.open_in_new_rounded),
+              label: 'Login',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.grey,
+          onTap: (int index) {
+            switch (index) {
+              case 0:
+                // Home
+                break;
+              case 1:
+                showModal(context);
+                break;
+            }
+            if (mounted) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            }
+          },
         ),
       ),
     );
@@ -2263,23 +1520,112 @@ class _MyHomePageState extends State<HomeScreen> {
   void showModal(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        content: const Text('¿Quieres cerrar la sesión?'),
-        actions: <TextButton>[
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Cancelar'),
+      barrierDismissible: true, // Allow clicking outside to dismiss
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.all(25),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.logout_rounded,
+                      color: Colors.redAccent, size: 40),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "¿Cerrar Sesión?",
+                  style: TextStyle(
+                    fontFamily: "Montserrat",
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xff060024),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Estás a punto de salir. ¿Quieres continuar?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: "Montserrat",
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        child: Text(
+                          "Cancelar",
+                          style: TextStyle(
+                            fontFamily: "Montserrat",
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Close dialog first
+                          Navigator.pop(context);
+                          logout2();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff060024),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          "Salir",
+                          style: TextStyle(
+                            fontFamily: "Montserrat",
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              logout2();
-            },
-            child: const Text('Cerrar sesión'),
-          )
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -2299,5 +1645,192 @@ class _MyHomePageState extends State<HomeScreen> {
     final distancia = radioTierra * c;
 
     return distancia;
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 15),
+      decoration: const BoxDecoration(
+        color: Color(0xff007DA4),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(15),
+          topRight: Radius.circular(15),
+        ),
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontFamily: "Montserrat",
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumInfoCard({required String title, required List<Widget> children}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle(title),
+          Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: Column(
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVisitasTable() {
+    if (totalVisitasdList.isEmpty) {
+      return Container();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: MaterialStateProperty.all(const Color(0xff007DA4)),
+            headingTextStyle: const TextStyle(
+              fontFamily: "Montserrat",
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+            dataRowColor: MaterialStateProperty.resolveWith<Color?>(
+              (Set<MaterialState> states) {
+                return null; // Use default or add alternated colors here logic if needed
+              },
+            ),
+            columns: const [
+              DataColumn(label: Text("Evidencia")),
+              DataColumn(label: Text("Fecha")),
+              DataColumn(label: Text("Tiempo")),
+              DataColumn(label: Text("Visitante")),
+              DataColumn(label: Text("Perfil")),
+            ],
+            rows: totalVisitasdList.asMap().entries.map((entry) {
+              int index = entry.key;
+              var item = entry.value;
+
+              DateTime fechaFl = DateTime.parse(item['fecha_i']).toLocal();
+              DateTime nuevaFechaFl = fechaFl.add(const Duration(hours: -1));
+              String fechaString = DateFormat('dd-MM-yyyy\nHH:mm:ss').format(nuevaFechaFl);
+
+              return DataRow(
+                color: MaterialStateProperty.resolveWith<Color?>(
+                  (Set<MaterialState> states) {
+                    // Alternating row colors for better readability
+                    if (index % 2 == 0) return Colors.grey.withOpacity(0.05);
+                    return Colors.white;
+                  },
+                ),
+                cells: [
+                  DataCell(
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => Dialog(
+                          backgroundColor: Colors.transparent,
+                          insetPadding: EdgeInsets.zero,
+                          child: Stack(
+                            children: [
+                              PhotoView(
+                                imageProvider: NetworkImage(
+                                  "http://72.167.33.202${item['imgF']}",
+                                ),
+                                backgroundDecoration: const BoxDecoration(color: Colors.black87),
+                                minScale: PhotoViewComputedScale.contained,
+                                maxScale: PhotoViewComputedScale.covered * 2.5,
+                              ),
+                              Positioned(
+                                top: 40,
+                                right: 12,
+                                child: GestureDetector(
+                                  onTap: () => Navigator.pop(_),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Icon(Icons.close, color: Colors.white, size: 22),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: Image.network(
+                          "http://72.167.33.202${item['imgF']}",
+                          width: 40,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.broken_image, color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                  ),
+                  DataCell(Text(
+                    fechaString,
+                    style: const TextStyle(fontFamily: "Montserrat", fontSize: 14),
+                  )),
+                  DataCell(Text(
+                    item['diferencia_tiempo'] ?? '',
+                    style: const TextStyle(fontFamily: "Montserrat", fontSize: 14),
+                  )),
+                  DataCell(Text(
+                    item['nombre_usuario'] ?? '',
+                    style: const TextStyle(fontFamily: "Montserrat", fontSize: 14),
+                  )),
+                  DataCell(Text(
+                    item['perfil'] ?? '',
+                    style: const TextStyle(fontFamily: "Montserrat", fontSize: 14),
+                  )),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
   }
 }
