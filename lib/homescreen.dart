@@ -1770,7 +1770,7 @@ class _MyHomePageState extends State<HomeScreen> {
                             children: [
                               PhotoView(
                                 imageProvider: NetworkImage(
-                                  "http://72.167.33.202${item['imgF']}",
+                                  Api.buildImageUrl(item['imgF']),
                                 ),
                                 backgroundDecoration: const BoxDecoration(color: Colors.black87),
                                 minScale: PhotoViewComputedScale.contained,
@@ -1799,7 +1799,7 @@ class _MyHomePageState extends State<HomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 5),
                         child: Image.network(
-                          "http://72.167.33.202${item['imgF']}",
+                          Api.buildImageUrl(item['imgF']),
                           width: 40,
                           height: 60,
                           fit: BoxFit.cover,

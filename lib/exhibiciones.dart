@@ -477,7 +477,7 @@ class _MyHomePageState extends State<Exhibiciones> {
                                                         child: PhotoView(
                                                           backgroundDecoration: const BoxDecoration(color: Colors.transparent),
                                                           imageProvider: NetworkImage(
-                                                            "http://72.167.33.202${exhibicionesList[index]['fotoF']}",
+                                                            Api.buildImageUrl(exhibicionesList[index]['fotoF']),
                                                           ),
                                                         ),
                                                       ),
@@ -491,7 +491,7 @@ class _MyHomePageState extends State<Exhibiciones> {
                                                       border: Border.all(color: Colors.grey.shade300),
                                                       image: DecorationImage(
                                                         image: NetworkImage(
-                                                          "http://72.167.33.202${exhibicionesList[index]['fotoF']}",
+                                                          Api.buildImageUrl(exhibicionesList[index]['fotoF']),
                                                         ),
                                                         fit: BoxFit.cover,
                                                       ),

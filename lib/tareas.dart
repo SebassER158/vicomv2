@@ -282,8 +282,8 @@ class _MyHomePageState extends State<Tareas> {
                             DateTime fechaF2 = DateTime.parse(t['fecha_retro']).toLocal();
                             String fechaRetroStr = DateFormat('dd-MM-yyyy HH:mm').format(fechaF2.add(const Duration(hours: -2)));
                             return _taskCard(
-                              imageUrl: 'http://72.167.33.202${t['imgF']}',
-                              retroImageUrl: 'http://72.167.33.202${t['imgF_retro']}',
+                              imageUrl: Api.buildImageUrl(t['imgF']),
+                              retroImageUrl: Api.buildImageUrl(t['imgF_retro']),
                               fecha: fechaStr,
                               opcion: t['opcion'],
                               comentario: t['comentario'],
@@ -317,7 +317,7 @@ class _MyHomePageState extends State<Tareas> {
                             DateTime fechaFl = DateTime.parse(t['fecha']).toLocal();
                             String fechaStr = DateFormat('dd-MM-yyyy').format(fechaFl.add(const Duration(hours: -1)));
                             return _taskCard(
-                              imageUrl: 'http://72.167.33.202${t['imgF']}',
+                              imageUrl: Api.buildImageUrl(t['imgF']),
                               fecha: fechaStr,
                               opcion: t['opcion'],
                               comentario: t['comentario'],

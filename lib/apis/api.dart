@@ -6,6 +6,16 @@ class Api {
   String server = "http://72.167.33.202:2020";
   // String server = "http://193.203.165.213:2025";
 
+  static String buildImageUrl(dynamic pathStr) {
+    if (pathStr == null) return "";
+    String path = pathStr.toString();
+    if (path.isEmpty) return "";
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+    return "http://72.167.33.202$path";
+  }
+
   saveTareas(
       String cuenta, int tienda, String tarea, String comentario) async {
     var url = "$server/postSaveTareas";
