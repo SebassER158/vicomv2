@@ -264,6 +264,12 @@ class Api {
     return await http.get(Uri.parse(url));
   }
 
+  getUserLoginInfo(String cuenta, String user, String pass) async{
+    var url = "$server/getUserLoginInfo/$cuenta/$user/$pass";
+    print(url);
+    return await http.get(Uri.parse(url));
+  }
+
   getCheckTareas(String cuenta, String tarea, int tienda) async{
     var url = "$server/getCheckTareas/$cuenta/$tarea/$tienda";
     return await http.get(Uri.parse(url));
@@ -276,6 +282,11 @@ class Api {
 
   getAvailableModules(String cuenta) async{
     var url = "$server/getAvailableModules/$cuenta";
+    return await http.get(Uri.parse(url));
+  }
+
+  getValuesTableByValor(String cuenta, String tabla, String condicion, String valor) async{
+    var url = "$server/getValuesTableByValor/$cuenta/$tabla/$condicion/$valor";
     return await http.get(Uri.parse(url));
   }
 

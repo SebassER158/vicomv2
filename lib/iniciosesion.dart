@@ -76,34 +76,44 @@ class _IniciosesionState extends State<Iniciosesion> {
   Future userLogin(user, pass) async {
     print("$user and $pass");
     try {
-      var response = await Api().getUserLogin(cuenta, user, pass);
+      var response = await Api().getUserLoginInfo(cuenta, user, pass);
       if (response.statusCode == 200) {
         print("Entro en response 200");
         String respuesta = response.body;
         var data = jsonDecode(respuesta);
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        if(data[0]["total"] == 1){
+        if (data is List && data.isNotEmpty) {
+          String nip = (data[0]["nip"] ?? "").toString();
+          String nombre = (data[0]["nombre"] ?? "").toString();
+          await prefs.setString('nip', nip);
+          await prefs.setString('nombre', nombre);
           await prefs.setBool('iniciosesion', true);
           setState(() {
             isLoading = false;
           });
           Navigator.of(context).pushAndRemoveUntil(LoginScreen.route(), (route) => false);
-        }else{
+        } else {
           Fluttertoast.showToast(
             msg: "No existe el usuario",
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
             timeInSecForIosWeb: 1,
             fontSize: 16.0);
-            setState(() {
-              isLoading = false;
-            });
+          setState(() {
+            isLoading = false;
+          });
         }
       } else {
         print(response.statusCode);
+        setState(() {
+          isLoading = false;
+        });
       }
     } catch (e) {
       print("Error de conexión: $e");
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 

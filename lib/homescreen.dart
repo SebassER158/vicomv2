@@ -48,6 +48,7 @@ class _MyHomePageState extends State<HomeScreen> {
   String perfil = "";
   String userCeys = "";
   String nombreUsuario = "";
+  String nombreUltimaVisita = "";
   String saludo = "Hola,";
   String fecha_cadena = "";
 
@@ -202,6 +203,7 @@ class _MyHomePageState extends State<HomeScreen> {
       formato = (prefs.getString('formato') ?? "");
       numero = (prefs.getString('numero') ?? "");
       cadena = (prefs.getString('cadena') ?? "");
+      nombreUsuario = (prefs.getString('nombre') ?? "");
     });
   }
 
@@ -312,7 +314,7 @@ class _MyHomePageState extends State<HomeScreen> {
                   fechaInicial = DateFormat('dd-MM-yyyy HH:mm:ss').format(nuevaFechaF);
                   userCeys = ultimaVisita[0]['userCeys'] ?? "";
                   perfil = ultimaVisita[0]['perfil'];
-                  nombreUsuario = ultimaVisita[0]['nombre_usuario'];
+                  nombreUltimaVisita = ultimaVisita[0]['nombre_usuario'] ?? "";
                 }
               });
             }
@@ -894,7 +896,7 @@ class _MyHomePageState extends State<HomeScreen> {
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16))),
                               Center(
-                                child: Text(nombreUsuario,
+                                child: Text(nombreUltimaVisita,
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                         fontFamily: "Montserrat",
