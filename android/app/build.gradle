@@ -13,44 +13,27 @@ if (localPropertiesFile.exists()) {
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
-    throw new java.io.FileNotFoundException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+    throw new java.io.FileNotFoundException("Flutter SDK not found.")
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
-
-// apply plugin: 'com.android.application'
-// apply plugin: 'kotlin-android'
+// Cargamos el script de Flutter antes que nada en la app
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace "com.vicom.v2"
 
+    // --- TUS FIRMAS (PROTEGIDAS) ---
     def keystoreProperties = new Properties()
     def keystorePropertiesFile = rootProject.file('key.properties')
     if (keystorePropertiesFile.exists()) {
         keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
     }
 
-    
     compileSdkVersion 35
-    ndkVersion flutter.ndkVersion
-
-    // compileOptions {
-    //     sourceCompatibility JavaVersion.VERSION_1_8
-    //     targetCompatibility JavaVersion.VERSION_1_8
-    // }
-
-    // kotlinOptions {
-    //     jvmTarget = '1.8'
-    // }
+    ndkVersion "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -61,13 +44,8 @@ android {
         jvmTarget = '17'
     }
 
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-
     defaultConfig {
         applicationId "com.vicom.v2"
-        // minSdkVersion flutter.minSdkVersion
         minSdkVersion 21
         targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
@@ -86,6 +64,13 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
+        }
+    }
+
+    // --- ALINEACIÓN 16kB ---
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
 }

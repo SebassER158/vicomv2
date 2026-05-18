@@ -1,15 +1,11 @@
 buildscript {
-    // ext.kotlin_version = '1.6.10'
-    // ext.kotlin_version = '1.8.0'
     ext.kotlin_version = '1.8.22'
     repositories {
         google()
         mavenCentral()
     }
-
     dependencies {
-        // classpath 'com.android.tools.build:gradle:7.1.2'
-        classpath 'com.android.tools.build:gradle:8.1.1'
+        classpath 'com.android.tools.build:gradle:8.3.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -25,8 +21,28 @@ rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+
+// SOLUCIÓN AL ERROR DE EVALUACIÓN:
+// Configuramos los subproyectos (plugins) de forma inmediata
 subprojects {
     project.evaluationDependsOn(':app')
+    
+    // Si el proyecto tiene la extensión de Android, configuramos el SDK de una vez
+    project.plugins.withId('com.android.library') {
+        project.android {
+            compileSdkVersion 35
+            buildToolsVersion "35.0.0"
+            if (namespace == null) {
+                namespace project.group
+            }
+        }
+        // Parche para geolocator y otros que buscan la propiedad 'flutter'
+        project.ext.set("flutter", [
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            minSdkVersion: 21
+        ])
+    }
 }
 
 tasks.register("clean", Delete) {
