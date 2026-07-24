@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 
 class Api {
 
-  String server = "http://72.167.33.202:2020";
+  // String server = "https://backend.cloudsicom.com";
+  String server = "https://backendv1.cloudsicom.com";
+  // String server = "http://72.167.33.202:2020";
   // String server = "http://193.203.165.213:2025";
 
   static String buildImageUrl(dynamic pathStr) {
@@ -14,6 +16,7 @@ class Api {
       return path;
     }
     return "http://72.167.33.202$path";
+    // return "https://backendv1.cloudsicom.com$path";
   }
 
   saveTareas(
@@ -51,7 +54,7 @@ class Api {
   }
 
   postSaveTareasFotoAsignadas(
-      int tienda, String tarea, String comentario, String cuenta, String nombre, String imagen64) async {
+      int tienda, String tarea, String comentario, String cuenta, String nombre, String imagen64, String ejecutivo) async {
     var url = "$server/postSaveTareasFotoAsignadas";
     return await http.post(Uri.parse(url),
         body: json.encode({
@@ -60,7 +63,8 @@ class Api {
           "imgF": imagen64,
           "tarea": tarea,
           "comentario": comentario,
-          "db": cuenta
+          "db": cuenta,
+          "ejecutivo": ejecutivo
         }),
         headers: {
           "content-type": "application/json",
@@ -250,6 +254,24 @@ class Api {
 
   getTareasPendientes(String cuenta, int tiendaId) async{
     var url = "$server/getTareasPendientes/$cuenta/$tiendaId";
+    print(url);
+    return await http.get(Uri.parse(url));
+  }
+
+  getTareasAsignadasMesGlobal(String cuenta, String ejecutivo) async{
+    var url = "$server/getTareasAsignadasMesGlobal/$cuenta/$ejecutivo";
+    print(url);
+    return await http.get(Uri.parse(url));
+  }
+
+  getTareasRealizadasGlobal(String cuenta, String ejecutivo) async{
+    var url = "$server/getTareasRealizadasGlobal/$cuenta/$ejecutivo";
+    print(url);
+    return await http.get(Uri.parse(url));
+  }
+
+  getTareasPendientesGlobal(String cuenta, String ejecutivo) async{
+    var url = "$server/getTareasPendientesGlobal/$cuenta/$ejecutivo";
     print(url);
     return await http.get(Uri.parse(url));
   }

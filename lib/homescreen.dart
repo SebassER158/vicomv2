@@ -9,9 +9,9 @@ import 'package:vicomv2/asignaciontareas.dart';
 import 'package:vicomv2/biscreen.dart';
 import 'package:vicomv2/exhibiciones.dart';
 import 'package:vicomv2/frentes.dart';
-import 'package:vicomv2/iniciosesion.dart';
 import 'package:vicomv2/providers/modules_provider.dart';
 import 'package:vicomv2/puntoscontrol.dart';
+import 'package:vicomv2/services/tareas_badge_controller.dart';
 import 'package:vicomv2/tareas.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -19,6 +19,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart' hide RefreshIndicator;
 import 'package:vicomv2/widgets/app_drawer.dart';
+import 'package:vicomv2/widgets/app_bottom_nav_bar.dart';
 
 import 'loginScreen.dart';
 
@@ -517,6 +518,11 @@ class _MyHomePageState extends State<HomeScreen> {
         }));
       }
 
+      // 13. Badge de tareas realizadas (Condicional)
+      if (hasModule('tareas_asignadas')) {
+        futures.add(TareasBadgeController.instance.refreshPorTienda());
+      }
+
       await Future.wait(futures);
 
     } catch (e) {
@@ -551,7 +557,8 @@ class _MyHomePageState extends State<HomeScreen> {
   void logout() async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove("logueado");
-    await preferences.remove("nip");
+    // "nip" identifica al usuario (se guarda en Iniciosesion) y lo usa
+    // TareasGlobal; no debe borrarse al solo cambiar de tienda.
     await preferences.remove("id_sucursal");
     await preferences.remove("usuario");
     await preferences.remove("id_usuario");
@@ -560,21 +567,6 @@ class _MyHomePageState extends State<HomeScreen> {
     // await preferences.clear();
     //Navigator.of(context).push(LoginS.route("mensaje"));
     Navigator.of(context).pushReplacement(LoginScreen.route());
-  }
-
-  void logout2() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    await preferences.remove("logueado");
-    await preferences.remove("nip");
-    await preferences.remove("id_sucursal");
-    await preferences.remove("usuario");
-    await preferences.remove("id_usuario");
-    await preferences.remove("alias");
-    await preferences.remove("iniciosesion");
-
-    // await preferences.clear();
-    //Navigator.of(context).push(LoginS.route("mensaje"));
-    Navigator.of(context).pushReplacement(Iniciosesion.route());
   }
 
   void _onRefresh() async {
@@ -1400,34 +1392,11 @@ class _MyHomePageState extends State<HomeScreen> {
               ),
           ],
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xff060024),
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.open_in_new_rounded),
-              label: 'Login',
-            ),
-          ],
+        bottomNavigationBar: AppBottomNavBar(
           currentIndex: _selectedIndex,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey,
-          onTap: (int index) {
-            switch (index) {
-              case 0:
-                // Home
-                break;
-              case 1:
-                showModal(context);
-                break;
-            }
+          onIndexChanged: (index) {
             if (mounted) {
-              setState(() {
-                _selectedIndex = index;
-              });
+              setState(() => _selectedIndex = index);
             }
           },
         ),
@@ -1517,118 +1486,6 @@ class _MyHomePageState extends State<HomeScreen> {
     }
     return Tuple2<List<DropdownMenuItem<String>>, int>(
         resultados, resultados.length);
-  }
-
-  void showModal(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: true, // Allow clicking outside to dismiss
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Container(
-            padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.logout_rounded,
-                      color: Colors.redAccent, size: 40),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  "¿Cerrar Sesión?",
-                  style: TextStyle(
-                    fontFamily: "Montserrat",
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xff060024),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "Estás a punto de salir. ¿Quieres continuar?",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: "Montserrat",
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(color: Colors.grey[300]!),
-                          ),
-                        ),
-                        child: Text(
-                          "Cancelar",
-                          style: TextStyle(
-                            fontFamily: "Montserrat",
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Close dialog first
-                          Navigator.pop(context);
-                          logout2();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff060024),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text(
-                          "Salir",
-                          style: TextStyle(
-                            fontFamily: "Montserrat",
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   double calcularDistancia(lat1, lon1, lat2, lon2) {

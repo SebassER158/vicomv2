@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:vicomv2/Iniciosesion.dart';
 import 'package:vicomv2/apis/api.dart';
-import 'package:vicomv2/providers/modules_provider.dart';
 
 
 class ConfiguracionScreen extends StatefulWidget {
@@ -46,7 +44,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     logindata = await SharedPreferences.getInstance();
     newuser = (logindata.getBool('configurado') ?? false);
     if (newuser == true) {
-      print("Paso por configurado true");
       // ignore: use_build_context_synchronously
       Navigator.pushReplacement(context,
           MaterialPageRoute(builder: (context) => const Iniciosesion()));
@@ -62,12 +59,11 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
 
   Future userLogin(nip) async {
     var url = "${Api().server}/getValuesTableByCuenta/sicom/cuentas/$nip";
-    print(url);
     http.Response response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       if (response.body.length != 2) {
-        var data = jsonDecode(response.body);
+        jsonDecode(response.body);
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('cuenta', nip);
@@ -300,9 +296,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),
-                  borderSide: Colors.grey.withOpacity(0.5) != null 
-                      ? BorderSide(color: Colors.grey.withOpacity(0.5)) 
-                      : const BorderSide(color: Colors.grey),
+                  borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),

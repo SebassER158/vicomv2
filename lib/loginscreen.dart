@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vicomv2/apis/api.dart';
 import 'package:vicomv2/homescreen.dart';
@@ -10,6 +11,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vicomv2/providers/modules_provider.dart';
+import 'package:vicomv2/services/tareas_badge_controller.dart';
+import 'package:vicomv2/widgets/app_bottom_nav_bar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,6 +48,8 @@ class _LoginScreenState extends State<LoginScreen> {
   double latitude = 0.0;
   double longitude = 0.0;
 
+  int _selectedIndex = 0;
+
   //bool _logueado = false;
 
   @override
@@ -52,6 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     loginState();
     usuarioState();
+    TareasBadgeController.instance.refreshGlobal();
   }
 
   // void modulosDisponibles() async {
@@ -242,7 +248,8 @@ class _LoginScreenState extends State<LoginScreen> {
         home: Scaffold(
           body: SingleChildScrollView(
             child: SizedBox(
-              height: MediaQuery.of(context).size.height,
+              height: MediaQuery.of(context).size.height -
+                  kBottomNavigationBarHeight,
               child: Container(
                 color: const Color(0xff060024), // Fallback
                 child: Column(
@@ -354,6 +361,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+          ),
+          bottomNavigationBar: AppBottomNavBar(
+            currentIndex: _selectedIndex,
+            isLoginContext: true,
+            onIndexChanged: (index) => setState(() => _selectedIndex = index),
           ),
         ),
       );
@@ -500,6 +512,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 55,
                   child: ElevatedButton(
                     onPressed: () {
+                      if (_tienda.isEmpty) {
+                        Fluttertoast.showToast(
+                            msg: "Selecciona una tienda para continuar",
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.BOTTOM,
+                            timeInSecForIosWeb: 1,
+                            fontSize: 16.0);
+                        return;
+                      }
                       if (_key.currentState!.validate()) {
                         _key.currentState!.save();
                         setState(() {
@@ -550,7 +571,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 color: Colors.grey,
               )
             ),
-          )
+          ),
         ],
       ),
     );

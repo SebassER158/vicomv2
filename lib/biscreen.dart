@@ -1,30 +1,18 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'package:vicomv2/apis/api.dart';
-import 'package:vicomv2/asignaciontareas.dart';
-import 'package:vicomv2/exhibiciones.dart';
-import 'package:vicomv2/frentes.dart';
-import 'package:vicomv2/homescreen.dart';
-import 'package:vicomv2/puntoscontrol.dart';
-import 'package:vicomv2/tareas.dart';
-import 'package:vicomv2/usuario/actividadesscreen.dart';
-import 'package:intl/intl.dart';
-import 'package:search_choices/search_choices.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:photo_view/photo_view.dart';
 import 'package:vicomv2/widgets/app_drawer.dart';
+import 'package:vicomv2/widgets/app_bottom_nav_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'loginScreen.dart';
 
 class BiScreen extends StatefulWidget {
+  const BiScreen({super.key});
+
   static Route<dynamic> route(String mensaje) {
     return MaterialPageRoute(
-      builder: (context) => BiScreen(),
+      builder: (context) => const BiScreen(),
     );
   }
 
@@ -33,7 +21,7 @@ class BiScreen extends StatefulWidget {
 }
 
 class BiScreenState extends State<BiScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late String datauv;
   var ultimaVisitaList = [];
   var ultimaVisita;
@@ -53,10 +41,7 @@ class BiScreenState extends State<BiScreen> {
   var tareas_realizadasList = [];
 
   int _selectedIndex = 0;
-  final ScrollController _homeController = ScrollController();
 
-  File? _image;
-  final ImagePicker _picker = ImagePicker();
   var controller;
 
   Map<String, bool> availableModules = {};
@@ -132,7 +117,8 @@ class BiScreenState extends State<BiScreen> {
   void logout() async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove("logueado");
-    await preferences.remove("nip");
+    // "nip" identifica al usuario (se guarda en Iniciosesion) y lo usa
+    // TareasGlobal; no debe borrarse al solo cambiar de tienda.
     await preferences.remove("id_sucursal");
     await preferences.remove("usuario");
     await preferences.remove("id_usuario");
@@ -143,17 +129,6 @@ class BiScreenState extends State<BiScreen> {
     Navigator.of(context).pushReplacement(LoginScreen.route());
   }
 
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
-
-    setState(() {
-      if (pickedFile != null) {
-        _image = File(pickedFile.path);
-      } else {
-        print('No se seleccionó ninguna imagen.');
-      }
-    });
-  }
 
   @override
   void dispose() {
@@ -218,40 +193,9 @@ class BiScreenState extends State<BiScreen> {
             ),
           ],
         )),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xff060024),
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.open_in_new_rounded),
-              label: 'Tiendas',
-            ),
-          ],
+        bottomNavigationBar: AppBottomNavBar(
           currentIndex: _selectedIndex,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey,
-          onTap: (int index) {
-            switch (index) {
-              case 0:
-                // only scroll to top when current index is selected.
-                if (_selectedIndex == index) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                      HomeScreen.route(""), (route) => false);
-                }
-                break;
-              case 1:
-                // showModal(context);
-                logout();
-            }
-            setState(
-              () {
-                _selectedIndex = index;
-              },
-            );
-          },
+          onIndexChanged: (index) => setState(() => _selectedIndex = index),
         ),
       ),
     );

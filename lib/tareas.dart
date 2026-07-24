@@ -1,7 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:vicomv2/apis/api.dart';
@@ -9,8 +7,8 @@ import 'package:vicomv2/asignaciontareas.dart';
 import 'package:vicomv2/biscreen.dart';
 import 'package:vicomv2/exhibiciones.dart';
 import 'package:vicomv2/frentes.dart';
-import 'package:vicomv2/homescreen.dart';
 import 'package:vicomv2/puntoscontrol.dart';
+import 'package:vicomv2/services/tareas_badge_controller.dart';
 import 'package:vicomv2/usuario/actividadesscreen.dart';
 import 'package:intl/intl.dart';
 import 'package:search_choices/search_choices.dart';
@@ -18,6 +16,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
 import 'package:vicomv2/widgets/app_drawer.dart';
+import 'package:vicomv2/widgets/app_bottom_nav_bar.dart';
 
 import 'loginScreen.dart';
 
@@ -52,7 +51,7 @@ class _MyHomePageState extends State<Tareas> {
   var tareas_pendientesList = [];
   var tareas_realizadasList = [];
 
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -137,6 +136,8 @@ class _MyHomePageState extends State<Tareas> {
           tareas_realizadas = jsonDecode(respuesta);
           tareas_realizadasList = tareas_realizadas ?? "[]";
         });
+        TareasBadgeController.instance
+            .marcarLeidoPorTienda(tareas_realizadasList.length);
       } else {
         print(response1.statusCode);
       }
@@ -164,7 +165,8 @@ class _MyHomePageState extends State<Tareas> {
   void logout() async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove("logueado");
-    await preferences.remove("nip");
+    // "nip" identifica al usuario (se guarda en Iniciosesion) y lo usa
+    // TareasGlobal; no debe borrarse al solo cambiar de tienda.
     await preferences.remove("id_sucursal");
     await preferences.remove("usuario");
     await preferences.remove("id_usuario");
@@ -333,20 +335,9 @@ class _MyHomePageState extends State<Tareas> {
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xff060024),
-          selectedItemColor: const Color(0xff007DA4),
-          unselectedItemColor: Colors.white60,
+        bottomNavigationBar: AppBottomNavBar(
           currentIndex: _selectedIndex,
-          onTap: (index) {
-            if (index == 0 && _selectedIndex == index) Navigator.of(context).pushAndRemoveUntil(HomeScreen.route(''), (r) => false);
-            else if (index == 1) logout();
-            setState(() => _selectedIndex = index);
-          },
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Salir'),
-          ],
+          onIndexChanged: (index) => setState(() => _selectedIndex = index),
         ),
       ),
     );

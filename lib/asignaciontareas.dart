@@ -3,16 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:vicomv2/apis/api.dart';
-import 'package:vicomv2/biscreen.dart';
-import 'package:vicomv2/exhibiciones.dart';
-import 'package:vicomv2/frentes.dart';
 import 'package:vicomv2/homescreen.dart';
-import 'package:vicomv2/providers/modules_provider.dart';
-import 'package:vicomv2/puntoscontrol.dart';
-import 'package:vicomv2/tareas.dart';
-import 'package:search_choices/search_choices.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:vicomv2/widgets/app_drawer.dart';
 import 'package:flutter/foundation.dart';
@@ -36,7 +28,7 @@ class AsignacionTareas extends StatefulWidget {
 }
 
 class AsignacionTareasState extends State<AsignacionTareas> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late String datauv;
   var ultimaVisitaList = [];
   var ultimaVisita;
@@ -48,6 +40,7 @@ class AsignacionTareasState extends State<AsignacionTareas> {
   String perfil = "";
   String userCeys = "";
   String nombreUsuario = "";
+  String nip = "";
 
   late String datao;
   var objetivosList = [];
@@ -69,8 +62,6 @@ class AsignacionTareasState extends State<AsignacionTareas> {
   var tareas;
   TextEditingController _commentController = TextEditingController();
 
-  int _selectedIndex = 0;
-  final ScrollController _homeController = ScrollController();
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -117,11 +108,12 @@ class AsignacionTareasState extends State<AsignacionTareas> {
       cuenta = (prefs.getString('cuenta') ?? "");
       tienda = (prefs.getString('tienda') ?? "");
       formato = (prefs.getString('formato') ?? "");
+      nip = (prefs.getString('nip') ?? "");
     });
   }
 
   void getData() async {
-    SharedPreferences prefs1 = await SharedPreferences.getInstance();
+    await SharedPreferences.getInstance();
 
     try {
       var response = await Api().getValoresTabla(cuenta, "tareasc");
@@ -236,7 +228,7 @@ class AsignacionTareasState extends State<AsignacionTareas> {
               fontSize: 16.0);
           
           await Api().postSaveTareasFotoAsignadas(
-              idTienda, tareaenv, comentarioenv, cuenta, nombre_foto, imagen64);
+              idTienda, tareaenv, comentarioenv, cuenta, nombre_foto, imagen64, nip);
 
           Navigator.of(context)
               .pushAndRemoveUntil(HomeScreen.route(""), (route) => false);
@@ -264,7 +256,8 @@ class AsignacionTareasState extends State<AsignacionTareas> {
   void logout() async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove("logueado");
-    await preferences.remove("nip");
+    // "nip" identifica al usuario (se guarda en Iniciosesion) y lo usa
+    // TareasGlobal; no debe borrarse al solo cambiar de tienda.
     await preferences.remove("id_sucursal");
     await preferences.remove("usuario");
     await preferences.remove("id_usuario");
@@ -527,6 +520,15 @@ class AsignacionTareasState extends State<AsignacionTareas> {
                                       return;
                                   }
 
+                                  if (_image == null) {
+                                      Fluttertoast.showToast(
+                                        msg: "Debes tomar una foto",
+                                        backgroundColor: Colors.red,
+                                        textColor: Colors.white,
+                                      );
+                                      return;
+                                  }
+
                                   setState(() {
                                     isSending = true;
                                   });
@@ -600,26 +602,6 @@ class AsignacionTareasState extends State<AsignacionTareas> {
     );
   }
 
-  Future<Tuple2<List<DropdownMenuItem<String>>, int>> _obtenerTareas(
-      String? searchQuery,
-      String? selectedItem,
-      bool? sortedBy,
-      List<Tuple2<String, String>>? searchList,
-      int? maxLength) async {
-    List<DropdownMenuItem<String>> resultados = [];
-
-    for (var element in tareas) {
-      String tarea = element['opcion'];
-      if (tarea.toUpperCase().contains(searchQuery!.toUpperCase())) {
-        resultados.add(DropdownMenuItem(
-          value: tarea,
-          child: Text("${element['opcion']}"),
-        ));
-      }
-    }
-    return Tuple2<List<DropdownMenuItem<String>>, int>(
-        resultados, resultados.length);
-  }
 
   void showModal(BuildContext context) {
     showDialog(

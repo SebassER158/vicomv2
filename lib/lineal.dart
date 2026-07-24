@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vicomv2/apis/api.dart';
-import 'package:vicomv2/homescreen.dart';
 import 'package:vicomv2/widgets/app_drawer.dart';
+import 'package:vicomv2/widgets/app_bottom_nav_bar.dart';
 
 import 'loginScreen.dart';
 
@@ -161,7 +161,8 @@ class _MyHomePageState extends State<Lineal> {
   void logout() async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove("logueado");
-    await preferences.remove("nip");
+    // "nip" identifica al usuario (se guarda en Iniciosesion) y lo usa
+    // TareasGlobal; no debe borrarse al solo cambiar de tienda.
     await preferences.remove("id_sucursal");
     await preferences.remove("usuario");
     await preferences.remove("id_usuario");
@@ -254,20 +255,9 @@ class _MyHomePageState extends State<Lineal> {
             ],
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xff060024),
-          selectedItemColor: const Color(0xff007DA4),
-          unselectedItemColor: Colors.white60,
+        bottomNavigationBar: AppBottomNavBar(
           currentIndex: _selectedIndex,
-          onTap: (index) {
-            if (index == 0 && _selectedIndex == index) Navigator.of(context).pushAndRemoveUntil(HomeScreen.route(''), (r) => false);
-            else if (index == 1) logout();
-            setState(() => _selectedIndex = index);
-          },
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Cerrar Sesión'),
-          ],
+          onIndexChanged: (index) => setState(() => _selectedIndex = index),
         ),
       ),
     );

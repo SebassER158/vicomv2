@@ -11,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:vicomv2/loginscreen.dart';
+import 'package:vicomv2/configuracionscreen.dart';
 
 class Iniciosesion extends StatefulWidget {
   const Iniciosesion({super.key});
@@ -71,6 +72,36 @@ class _IniciosesionState extends State<Iniciosesion> {
   void dispose() {
     // Clean up the controller when the widget is disposed.
     super.dispose();
+  }
+
+  Future<void> _resetAConfiguracion() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Regresar a Configuración"),
+        content: const Text(
+            "Esto borrará todos los datos guardados (cuenta, sesión, tienda) y regresará a la pantalla de configuración inicial. ¿Continuar?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Continuar"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!mounted) return;
+    Navigator.of(context)
+        .pushAndRemoveUntil(ConfiguracionScreen.route(), (route) => false);
   }
 
   Future userLogin(user, pass) async {
@@ -181,23 +212,26 @@ class _IniciosesionState extends State<Iniciosesion> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(20),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white.withOpacity(0.1),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.2),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 10),
-                                        )
-                                      ],
-                                    ),
-                                    child: Image.asset(
-                                      'assets/logo_login.png',
-                                      scale: 4,
-                                      // color: Colors.white, // Uncomment if logo needs to be white
+                                  GestureDetector(
+                                    onLongPress: _resetAConfiguracion,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.1),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            blurRadius: 20,
+                                            offset: const Offset(0, 10),
+                                          )
+                                        ],
+                                      ),
+                                      child: Image.asset(
+                                        'assets/logo_login.png',
+                                        scale: 4,
+                                        // color: Colors.white, // Uncomment if logo needs to be white
+                                      ),
                                     ),
                                   ),
                                 ],
