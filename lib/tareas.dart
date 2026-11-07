@@ -112,7 +112,7 @@ class _MyHomePageState extends State<Tareas> {
     cuenta = (prefs.getString('cuenta') ?? "");
 
     try {
-      var response = await Api().getTareasPendientes(cuenta, idTienda);
+      var response = await Api().getTareasPendientesAcumuladas(cuenta, idTienda);
       if (response.statusCode == 200) {
         print("Entro en response 200");
         String respuesta = response.body;
@@ -279,10 +279,10 @@ class _MyHomePageState extends State<Tareas> {
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (ctx, i) {
                             final t = tareas_realizadas[i];
-                            DateTime fechaFl = DateTime.parse(t['fecha']).toLocal();
-                            String fechaStr = DateFormat('dd-MM-yyyy HH:mm').format(fechaFl.add(const Duration(hours: -2)));
-                            DateTime fechaF2 = DateTime.parse(t['fecha_retro']).toLocal();
-                            String fechaRetroStr = DateFormat('dd-MM-yyyy HH:mm').format(fechaF2.add(const Duration(hours: -2)));
+                            DateTime fechaFl = DateTime.parse(t['fecha']);
+                            String fechaStr = DateFormat('dd-MM-yyyy HH:mm').format(fechaFl);
+                            DateTime fechaF2 = DateTime.parse(t['fecha_retro']);
+                            String fechaRetroStr = DateFormat('dd-MM-yyyy HH:mm').format(fechaF2);
                             return _taskCard(
                               imageUrl: Api.buildImageUrl(t['imgF']),
                               retroImageUrl: Api.buildImageUrl(t['imgF_retro']),
@@ -306,27 +306,7 @@ class _MyHomePageState extends State<Tareas> {
                         ],
                       ),
                       const SizedBox(height: 15),
-                      if (tareas_pendientes == null || (tareas_pendientes as List).isEmpty)
-                        _emptyState('Sin tareas pendientes')
-                      else
-                        ListView.separated(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: (tareas_pendientes as List).length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (ctx, i) {
-                            final t = tareas_pendientes[i];
-                            DateTime fechaFl = DateTime.parse(t['fecha']).toLocal();
-                            String fechaStr = DateFormat('dd-MM-yyyy').format(fechaFl.add(const Duration(hours: -1)));
-                            return _taskCard(
-                              imageUrl: Api.buildImageUrl(t['imgF']),
-                              fecha: fechaStr,
-                              opcion: t['opcion'],
-                              comentario: t['comentario'],
-                              isCompleted: false,
-                            );
-                          },
-                        ),
+                      ..._buildPendientes(),
                       const SizedBox(height: 30),
                     ],
                   ),
@@ -341,6 +321,88 @@ class _MyHomePageState extends State<Tareas> {
         ),
       ),
     );
+  }
+
+  // Mes desde el cual se empiezan a contar las pendientes arrastradas.
+  static final DateTime _mesInicioArrastre = DateTime(2026, 10);
+
+  Widget _pendienteCard(dynamic t) {
+    final fechaStr = DateFormat('dd-MM-yyyy').format(DateTime.parse(t['fecha']));
+    return _taskCard(
+      imageUrl: Api.buildImageUrl(t['imgF']),
+      fecha: fechaStr,
+      opcion: t['opcion'],
+      comentario: t['comentario'],
+      isCompleted: false,
+    );
+  }
+
+  List<Widget> _buildPendientes() {
+    final lista = (tareas_pendientes is List) ? tareas_pendientes as List : [];
+    final now = DateTime.now();
+    final inicioMesActual = DateTime(now.year, now.month);
+
+    final actuales = <dynamic>[];
+    final porMes = <DateTime, List<dynamic>>{};
+    for (final t in lista) {
+      final f = DateTime.tryParse(t['fecha']?.toString() ?? '');
+      if (f == null) continue;
+      if (!f.isBefore(inicioMesActual)) {
+        actuales.add(t);
+      } else if (!f.isBefore(_mesInicioArrastre)) {
+        porMes.putIfAbsent(DateTime(f.year, f.month), () => []).add(t);
+      }
+    }
+
+    final widgets = <Widget>[];
+    if (actuales.isEmpty) {
+      widgets.add(_emptyState('Sin tareas pendientes'));
+    } else {
+      for (var i = 0; i < actuales.length; i++) {
+        if (i > 0) widgets.add(const SizedBox(height: 10));
+        widgets.add(_pendienteCard(actuales[i]));
+      }
+    }
+
+    // Meses anteriores (desde octubre) hasta el mes previo al actual, recientes primero.
+    var mes = DateTime(inicioMesActual.year, inicioMesActual.month - 1);
+    while (!mes.isBefore(_mesInicioArrastre)) {
+      final tareas = porMes[mes] ?? [];
+      const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+        'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+      final nombre = meses[mes.month - 1];
+      widgets.add(const SizedBox(height: 12));
+      widgets.add(Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            key: PageStorageKey('pend_${mes.year}_${mes.month}'),
+            enabled: tareas.isNotEmpty,
+            leading: Icon(Icons.pending_actions,
+                color: tareas.isEmpty ? Colors.grey : Colors.orange),
+            title: Text('$nombre (${tareas.length})',
+                style: const TextStyle(
+                    color: Color(0xff060024), fontWeight: FontWeight.bold)),
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            children: [
+              for (var i = 0; i < tareas.length; i++) ...[
+                if (i > 0) const SizedBox(height: 10),
+                _pendienteCard(tareas[i]),
+              ],
+            ],
+          ),
+        ),
+      ));
+      mes = DateTime(mes.year, mes.month - 1);
+    }
+    return widgets;
   }
 
   Widget _statCard(String label, String value, Color color, IconData icon) {

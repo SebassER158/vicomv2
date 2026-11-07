@@ -393,9 +393,8 @@ class _MyHomePageState extends State<Exhibiciones> {
                               itemCount: exhibicionesList.length,
                               separatorBuilder: (context, index) => const SizedBox(height: 15),
                               itemBuilder: (BuildContext context, int index) {
-                                DateTime fechaFl = DateTime.parse(exhibicionesList[index]['fecha']).toLocal();
-                                DateTime nuevaFechaFl = fechaFl.add(const Duration(hours: -1));
-                                String fechaString = DateFormat('dd/MM/yyyy HH:mm:ss').format(nuevaFechaFl);
+                                DateTime fechaFl = DateTime.parse(exhibicionesList[index]['fecha']);
+                                String fechaString = DateFormat('dd/MM/yyyy HH:mm:ss').format(fechaFl);
                                 
                                 return Container(
                                   decoration: BoxDecoration(

@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 
 class Api {
 
-  // String server = "https://backend.cloudsicom.com";
-  String server = "https://backendv1.cloudsicom.com";
+  String server = "https://backend.cloudsicom.com";
+  // String server = "https://backendv1.cloudsicom.com";
   // String server = "http://72.167.33.202:2020";
   // String server = "http://193.203.165.213:2025";
 
@@ -254,6 +254,13 @@ class Api {
 
   getTareasPendientes(String cuenta, int tiendaId) async{
     var url = "$server/getTareasPendientes/$cuenta/$tiendaId";
+    print(url);
+    return await http.get(Uri.parse(url));
+  }
+
+  // Pendientes del mes actual + arrastradas desde octubre 2026.
+  getTareasPendientesAcumuladas(String cuenta, int tiendaId) async{
+    var url = "$server/getTareasPendientesAcumuladas/$cuenta/$tiendaId";
     print(url);
     return await http.get(Uri.parse(url));
   }

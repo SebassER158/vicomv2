@@ -310,9 +310,8 @@ class _MyHomePageState extends State<HomeScreen> {
                 ultimaVisitaList = ultimaVisita ?? [];
 
                 if (ultimaVisitaList.isNotEmpty) {
-                  DateTime fechaF = DateTime.parse(ultimaVisita[0]['fecha_i']).toLocal();
-                  DateTime nuevaFechaF = fechaF.add(const Duration(hours: -2));
-                  fechaInicial = DateFormat('dd-MM-yyyy HH:mm:ss').format(nuevaFechaF);
+                  DateTime fechaF = DateTime.parse(ultimaVisita[0]['fecha_i']);
+                  fechaInicial = DateFormat('dd-MM-yyyy HH:mm:ss').format(fechaF);
                   userCeys = ultimaVisita[0]['userCeys'] ?? "";
                   perfil = ultimaVisita[0]['perfil'];
                   nombreUltimaVisita = ultimaVisita[0]['nombre_usuario'] ?? "";
@@ -1604,9 +1603,8 @@ class _MyHomePageState extends State<HomeScreen> {
               int index = entry.key;
               var item = entry.value;
 
-              DateTime fechaFl = DateTime.parse(item['fecha_i']).toLocal();
-              DateTime nuevaFechaFl = fechaFl.add(const Duration(hours: -1));
-              String fechaString = DateFormat('dd-MM-yyyy\nHH:mm:ss').format(nuevaFechaFl);
+              DateTime fechaFl = DateTime.parse(item['fecha_i']);
+              String fechaString = DateFormat('dd-MM-yyyy\nHH:mm:ss').format(fechaFl);
 
               return DataRow(
                 color: MaterialStateProperty.resolveWith<Color?>(

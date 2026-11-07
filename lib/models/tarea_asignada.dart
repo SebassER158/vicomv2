@@ -28,14 +28,11 @@ class TareaAsignada {
 
   factory TareaAsignada.fromJson(Map<String, dynamic> json,
       {required bool isCompleted}) {
-    final fecha = DateTime.parse(json['fecha']).toLocal().add(
-        Duration(hours: isCompleted ? -2 : -1));
+    final fecha = DateTime.parse(json['fecha']);
 
     DateTime? fechaRetro;
     if (isCompleted && json['fecha_retro'] != null) {
-      fechaRetro = DateTime.parse(json['fecha_retro'])
-          .toLocal()
-          .add(const Duration(hours: -2));
+      fechaRetro = DateTime.parse(json['fecha_retro']);
     }
 
     return TareaAsignada(
